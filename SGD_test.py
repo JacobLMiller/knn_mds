@@ -18,7 +18,7 @@ norm = lambda x: np.linalg.norm(x,ord=2)
 
 
 def get_tsnet_layout(G,d,graph_name):
-    n = 1000
+    n = 2000
     momentum = 0.5
     tolerance = 1e-7
     window_size = 40
@@ -46,9 +46,11 @@ def get_tsnet_layout(G,d,graph_name):
     # Compute the shortest-path distance matrix.
     X = d
 
+    sigma = 100 if graph_name == 'jazz.vna' or graph_name == 'bigger_block.dot' else 40
+
     # The actual optimization is done in the thesne module.
     Y = thesne.tsnet(
-        X, output_dims=2, random_state=1, perplexity=40, n_epochs=n,
+        X, output_dims=2, random_state=1, perplexity=sigma, n_epochs=n,
         Y=Y_init,
         initial_lr=50, final_lr=50, lr_switch=n // 2,
         initial_momentum=momentum, final_momentum=momentum, momentum_switch=n // 2,
@@ -76,7 +78,7 @@ def get_tsnet_layout(G,d,graph_name):
 def get_unweighted(G,d):
     print("Beginning Unweighted")
     Y = SGD_MDS(d,weighted=False)
-    Y.solve(15)
+    Y.solve(30)
     X = layout_io.normalize_layout(Y.X)
 
     # Convert layout to vertex property
@@ -90,10 +92,14 @@ def get_weighted(G,d):
     print("Beginning weighted tests")
     for k in K:
         print('k = '.format(k), end='\r')
+        print()
         m = k if k < G.num_vertices() else G.num_vertices()-1
 
+        print(m)
+        #print(m)
+
         Y = SGD_MDS(d,weighted=True,k=m)
-        Y.solve(15)
+        Y.solve(30)
         X = layout_io.normalize_layout(Y.X)
 
         # Convert layout to vertex property
@@ -105,6 +111,20 @@ def get_weighted(G,d):
         weights[k] = {'layout': Y.X,
                       'stress': get_stress(Y.X,d),
                       'neighbor': get_neighborhood(Y.X,d)}
+
+    Y = SGD_MDS(d,weighted=True,k=G.num_vertices()-1)
+    Y.solve(30)
+    X = layout_io.normalize_layout(Y.X)
+
+    # Convert layout to vertex property
+    pos = G.new_vp('vector<float>')
+    pos.set_2d_array(X.T)
+
+    gt.graph_draw(G,pos=pos,output='drawings/weighted-k' + str(k) + ".png")
+
+    weights['n'] = {'layout': Y.X,
+                  'stress': get_stress(Y.X,d),
+                  'neighbor': get_neighborhood(Y.X,d)}
     return weights
 
 def get_stress(X,d):
@@ -137,7 +157,8 @@ def get_neighborhood(X,d,rg = 1):
 
     return sum/len(X)
 
-graphs = ['lesmis.vna', 'dwt_1005.vna','jazz.vna','block_2000.vna','small_block.dot','grid17.vna','visbrazil.vna']
+#graphs = ['lesmis.vna', 'dwt_1005.vna','jazz.vna','bigger_block.dot','small_block.dot','grid17.vna','visbrazil.vna']
+graphs = ['lesmis.vna']
 layouts = {}
 
 for g in graphs:
@@ -150,9 +171,9 @@ for g in graphs:
     d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
     for j in range(5):
         name = g + str(j)
-        tsnet = get_tsnet_layout(G,d,g)
+        #tsnet = get_tsnet_layout(G,d,g)
         print("-----------------------")
-        unweight = get_unweighted(G,d)
+        #unweight = get_unweighted(G,d)
         print("-----------------------")
         weight = get_weighted(G,d)
 
@@ -173,8 +194,8 @@ for g in graphs:
 
         for i in layouts[name].keys():
             if i != 'attributes' and i != 'weight':
-                layouts[g][i]['stress'] = get_stress(layouts[g][i]['layout'],d)
-                layouts[g][i]['neighbor'] = get_neighborhood(layouts[g][i]['layout'],d)
+                layouts[name][i]['stress'] = get_stress(layouts[name][i]['layout'],d)
+                layouts[name][i]['neighbor'] = get_neighborhood(layouts[name][i]['layout'],d)
 
 import pickle
 with open('experiment.pkl', 'wb') as myfile:
