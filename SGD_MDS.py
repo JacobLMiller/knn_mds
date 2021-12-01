@@ -84,7 +84,7 @@ class SGD_MDS:
             if max_move < epsilon:
                 break
             step = self.compute_step_size(count,num_iter)
-            #step = 1
+            #step = 0.01
 
             count += 1
             random.shuffle(indices)
@@ -121,9 +121,7 @@ class SGD_MDS:
         return dy_dx
 
     def compute_step_size(self,count,num_iter):
-        if count > 5:
-            lamb = -math.log(self.eta_min/self.eta_max)/(num_iter-1)
-            return self.w_max/(1+lamb*count)
+        
         lamb = math.log(self.eta_min/self.eta_max)/(num_iter-1)
         return self.eta_max*math.exp(lamb*count)
 
@@ -226,7 +224,14 @@ def output_euclidean(G,X):
     nx.drawing.nx_agraph.write_dot(G, "output.dot")
 
 def set_w(d,k):
-    k_nearest = [get_k_nearest(d[i],k) for i in range(len(d))]
+    f = np.zeros(d.shape)
+    for i in range(len(d)):
+        for j in range(len(d)):
+            if i == j:
+                f[i][j] = 100000
+            else:
+                f[i][j] = d[i][j]
+    k_nearest = [get_k_nearest(f[i],k) for i in range(len(d))]
 
     #1/(10*math.exp(d[i][j]))
     w = np.asarray([[ 0.001 if i != j else 0 for i in range(len(d))] for j in range(len(d))])
@@ -234,7 +239,6 @@ def set_w(d,k):
         for j in k_nearest[i]:
             if i != j:
                 w[i][j] = 1
-
 
     return w
 

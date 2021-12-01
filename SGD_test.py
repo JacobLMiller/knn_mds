@@ -87,7 +87,7 @@ def get_unweighted(G,d):
     return Y.X
 
 def get_weighted(G,d):
-    K = [1,2,4,8,16,32,64,128]
+    K = [2,4,8,16,32,64,128]
     weights = {}
     print("Beginning weighted tests")
     for k in K:
@@ -109,7 +109,7 @@ def get_weighted(G,d):
         gt.graph_draw(G,pos=pos,output='drawings/weighted-k' + str(k) + ".png")
 
         weights[k] = {'layout': Y.X,
-                      'stress': get_stress(Y.X,d),
+                      'stress': get_distortion(Y.X,d),
                       'neighbor': get_neighborhood(Y.X,d)}
 
     Y = SGD_MDS(d,weighted=True,k=G.num_vertices()-1)
@@ -123,7 +123,7 @@ def get_weighted(G,d):
     gt.graph_draw(G,pos=pos,output='drawings/weighted-k' + str(k) + ".png")
 
     weights['n'] = {'layout': Y.X,
-                  'stress': get_stress(Y.X,d),
+                  'stress': get_distortion(Y.X,d),
                   'neighbor': get_neighborhood(Y.X,d)}
     return weights
 
@@ -133,6 +133,20 @@ def get_stress(X,d):
         for j in range(i):
             stress += pow((norm(X[i]-X[j])-d[i][j])/d[i][j],2)
     return pow(stress,0.5)
+
+def get_distortion(X,d):
+    dist = 0
+    for i in range(len(X)):
+        for j in range(i):
+            dist += abs(norm(X[i]-X[j])-d[i][j])/d[i][j]
+    return dist/choose(len(X),2)
+
+def choose(n,k):
+    product = 1
+    for i in range(1,k+1):
+        product *= (n-(k-1))/i
+    return product
+
 
 def get_neighborhood(X,d,rg = 1):
     """
@@ -157,8 +171,8 @@ def get_neighborhood(X,d,rg = 1):
 
     return sum/len(X)
 
-#graphs = ['lesmis.vna', 'dwt_1005.vna','jazz.vna','bigger_block.dot','small_block.dot','grid17.vna','visbrazil.vna']
-graphs = ['lesmis.vna']
+graphs = ['dwt_1005.vna','dwt_419.vna','small_block.dot','bigger_block.dot','jazz.vna','block_2000.vna']
+#graphs = ['lesmis.vna']
 layouts = {}
 
 for g in graphs:
@@ -171,9 +185,9 @@ for g in graphs:
     d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
     for j in range(5):
         name = g + str(j)
-        #tsnet = get_tsnet_layout(G,d,g)
+        tsnet = get_tsnet_layout(G,d,g)
         print("-----------------------")
-        #unweight = get_unweighted(G,d)
+        unweight = get_unweighted(G,d)
         print("-----------------------")
         weight = get_weighted(G,d)
 
@@ -194,9 +208,9 @@ for g in graphs:
 
         for i in layouts[name].keys():
             if i != 'attributes' and i != 'weight':
-                layouts[name][i]['stress'] = get_stress(layouts[name][i]['layout'],d)
+                layouts[name][i]['stress'] = get_distortion(layouts[name][i]['layout'],d)
                 layouts[name][i]['neighbor'] = get_neighborhood(layouts[name][i]['layout'],d)
 
 import pickle
-with open('experiment.pkl', 'wb') as myfile:
+with open('experiment1.pkl', 'wb') as myfile:
     pickle.dump(layouts, myfile)
