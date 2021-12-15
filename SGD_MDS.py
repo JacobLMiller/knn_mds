@@ -32,8 +32,8 @@ class SGD_MDS:
         if weighted:
             self.w = set_w(self.d,k)
         else:
-            self.w = [[ 1 if i != j else 0 for i in range(self.n)]
-                        for j in range(self.n)]
+            self.w = np.array([[ 1 if i != j else 0 for i in range(self.n)]
+                        for j in range(self.n)])
 
         w_min = 1/pow(self.d_max,2)
         self.w_max = 1/pow(self.d_min,2)
@@ -121,7 +121,7 @@ class SGD_MDS:
         return dy_dx
 
     def compute_step_size(self,count,num_iter):
-        
+
         lamb = math.log(self.eta_min/self.eta_max)/(num_iter-1)
         return self.eta_max*math.exp(lamb*count)
 
@@ -234,7 +234,7 @@ def set_w(d,k):
     k_nearest = [get_k_nearest(f[i],k) for i in range(len(d))]
 
     #1/(10*math.exp(d[i][j]))
-    w = np.asarray([[ 0.001 if i != j else 0 for i in range(len(d))] for j in range(len(d))])
+    w = np.asarray([[ 1/np.exp(d[i][j]) if i != j else 0 for i in range(len(d))] for j in range(len(d))])
     for i in range(len(d)):
         for j in k_nearest[i]:
             if i != j:
