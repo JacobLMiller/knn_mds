@@ -50,6 +50,7 @@ class SGD_MDS:
         #random.shuffle(indices)
 
         max_move = 0
+        self.hist = []
 
         while count < num_iter:
             print('Epoch: {0}.'.format(count), end='\r')
@@ -58,7 +59,8 @@ class SGD_MDS:
                 j = indices[k][1]
                 if i > j:
                     i,j = j,i
-
+                if self.w[i][j] < 0.9:
+                    continue
                 pq = self.X[i] - self.X[j] #Vector between points
 
                 #mag = geodesic(self.X[i],self.X[j])
@@ -90,6 +92,7 @@ class SGD_MDS:
             random.shuffle(indices)
             if debug:
                 print(self.calc_stress())
+                self.hist.append(self.X.copy())
                 #print(self.calc_stress())
 
         #print("Total epochs: {0}. Final Stress: {1}".format(count,self.calc_stress()))
