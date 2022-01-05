@@ -297,6 +297,9 @@ def find_Y(X_shared, Y_shared, sigma_shared, N, output_dims, n_epochs,
 
     # Optimization loop
     converged = False
+
+    jacob_hist = []
+
     for epoch in range(n_epochs):
 
         # Switch parameters if a switching point is reached.
@@ -315,9 +318,11 @@ def find_Y(X_shared, Y_shared, sigma_shared, N, output_dims, n_epochs,
         # Do update step for velocity
         dY_norm = update_Yv()
         stepsize_over_time[epoch] = dY_norm # Save normalized stepsize
-        
+
         # Do a gradient descent step
         update_Y()
+
+        jacob_hist.append(Y_shared.get_value())
 
 
         c = get_cost()
@@ -349,7 +354,7 @@ def find_Y(X_shared, Y_shared, sigma_shared, N, output_dims, n_epochs,
     if not converged:
         print('\nWarning: Did not converge!')
 
-    return np.array(Y_shared.get_value())
+    return np.array(Y_shared.get_value()),jacob_hist
 
 
 def tsnet(X, perplexity=30, Y=None, output_dims=2, n_epochs=1000,
@@ -378,7 +383,7 @@ def tsnet(X, perplexity=30, Y=None, output_dims=2, n_epochs=1000,
     find_sigma(X_shared, sigma_shared, N, perplexity, sigma_iters, verbose)
 
     # Do the optimization to find Y (the node coordinates).
-    Y = find_Y(
+    Y,hist = find_Y(
         X_shared, Y_shared, sigma_shared, N, output_dims, n_epochs,
         initial_lr, final_lr, lr_switch, init_stdev, initial_momentum,
         final_momentum, momentum_switch,
@@ -389,4 +394,4 @@ def tsnet(X, perplexity=30, Y=None, output_dims=2, n_epochs=1000,
     )
 
     # Return the vertex coordinates.
-    return Y
+    return Y,hist

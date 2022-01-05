@@ -7,6 +7,9 @@ import modules.thesne as thesne
 import time
 import numpy as np
 
+import pickle
+
+
 from SGD_MDS import SGD_MDS, k_nearest_embedded
 
 norm = lambda x: np.linalg.norm(x,ord=2)
@@ -171,7 +174,11 @@ def get_neighborhood(X,d,rg = 1):
 
     return sum/len(X)
 
-graphs = ['dwt_1005.vna','dwt_419.vna','small_block.dot','bigger_block.dot','jazz.vna','block_2000.vna']
+with open('A_experiments.pkl', 'rb') as myfile:
+    layouts = pickle.load(myfile)
+myfile.close()
+
+graphs = ['dwt_419.vna','small_block.dot','block2.dot']
 #graphs = ['lesmis.vna']
 layouts = {}
 
@@ -181,36 +188,43 @@ for g in graphs:
     print("------------------------------")
     print("Graph: " + g)
 
+    layouts[g] = {}
     G = graph_io.load_graph("graphs/" + g)
     d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
-    for j in range(5):
-        name = g + str(j)
-        tsnet = get_tsnet_layout(G,d,g)
-        print("-----------------------")
-        unweight = get_unweighted(G,d)
-        print("-----------------------")
-        weight = get_weighted(G,d)
 
-        #D = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
+    exponents = [1,2,3,4,5,6,7]
+    K = [int(i*(G.num_vertices()/10)) for i in range(1,11)]
+    for p in exponents:
+        print("P: ", p)
+        layouts[g][p] = {}
+        for k in K:
+            print("K: ", k)
+            layouts[g][p][k] = []
+            for j in range(5):
+                A = gt.adjacency(G).toarray()
+                A = np.linalg.matrix_power(A,p)
+                A += np.random.normal(scale=0.01,size=A.shape)
+
+                k_nearest = [np.argpartition(A[i],-k)[-k:] for i in range(len(A))]
+
+                w = np.asarray([[ 1e-7 if i != j else 0 for i in range(len(A))] for j in range(len(A))])
+                for i in range(len(A)):
+                    for j in k_nearest[i]:
+                        if i != j:
+                            w[i][j] = 1
+                            w[j][i] = 1
+
+                Y = SGD_MDS(d,weighted=True,k=k,w=w)
+                #print(Y.w)
+                print("k: ", k)
+                Y.solve(15,debug=False)
+
+                layouts[g][p][k].append(Y.X)
+
+                with open('A_experiments.pkl', 'wb') as myfile:
+                    pickle.dump(layouts, myfile)
+                print()
 
 
-        layouts[name] = {'tsnet': {'layout': tsnet},
-                      'unweight': {'layout':unweight},
-                      'weight': weight,
-
-                      'attributes': {
-                        'name': g,
-                        '|V|': G.num_vertices(),
-                        '|E|': G.num_edges(),
-                        'diameter': np.max(d),
-                        'clustering-coefficient': gt.global_clustering(G)
-                      }}
-
-        for i in layouts[name].keys():
-            if i != 'attributes' and i != 'weight':
-                layouts[name][i]['stress'] = get_distortion(layouts[name][i]['layout'],d)
-                layouts[name][i]['neighbor'] = get_neighborhood(layouts[name][i]['layout'],d)
-
-import pickle
-with open('experiment1.pkl', 'wb') as myfile:
+with open('A_experiments.pkl', 'wb') as myfile:
     pickle.dump(layouts, myfile)

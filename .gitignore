@@ -3,6 +3,11 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+#Jacob additions
+figures/
+drawings/
+*.pkl
+
 # C extensions
 *.so
 
