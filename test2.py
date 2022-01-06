@@ -1,19 +1,36 @@
 import numpy as np
 import graph_tool.all as gt
 import scipy.io
+import time
+import modules.distance_matrix as distance_matrix
+from SGD_MDS import SGD_MDS
+import modules.graph_io as graph_io
 
 
-A = scipy.io.mmread('graphs/oscil_dcop_01.mtx').toarray()
-G = gt.Graph(directed=False)
-G.add_edge_list(np.transpose(A.nonzero()))
-gt.remove_parallel_edges(G)
-gt.remove_self_loops(G)
+#G = graph_io.load_graph("graphs/dwt_419.vna")
+G = gt.lattice([10,10])
+d = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
 
-remove = []
-for v in G.iter_vertices():
-    if len(list(G.iter_all_neighbors(v))) == 0:
-        remove.append(v)
+def layout(d):
+    Y = SGD_MDS(d,weighted=False)
+    Y.solve()
 
-G.remove_vertex(remove)        
 
-G.save('graphs/oscil.dot')
+
+def timing(f, n, a):
+    print(f.__name__)
+    r = range(n)
+    t1 = time.perf_counter()
+    for i in r:
+        f(a); f(a); f(a); f(a); f(a); f(a); f(a); f(a); f(a); f(a)
+    t2 = time.perf_counter()
+    print((t2-t1)/10)
+
+timing(layout,1,d)
+
+Y = SGD_MDS(d,weighted=False)
+Y.solve()
+pos = G.new_vp('vector<float>')
+pos.set_2d_array(Y.X.T)
+
+gt.graph_draw(G,pos=pos)

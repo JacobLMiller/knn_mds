@@ -180,7 +180,7 @@ myfile.close()
 
 graphs = ['dwt_419.vna','small_block.dot','block2.dot']
 #graphs = ['lesmis.vna']
-layouts = {}
+#layouts = {}
 
 for g in graphs:
     print("------------------------------")
@@ -188,15 +188,15 @@ for g in graphs:
     print("------------------------------")
     print("Graph: " + g)
 
-    layouts[g] = {}
+    #layouts[g] = {}
     G = graph_io.load_graph("graphs/" + g)
     d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
 
     exponents = [1,2,3,4,5,6,7]
-    K = [int(i*(G.num_vertices()/10)) for i in range(1,11)]
+    K = [2,4,8]
     for p in exponents:
         print("P: ", p)
-        layouts[g][p] = {}
+        #layouts[g][p] = {}
         for k in K:
             print("K: ", k)
             layouts[g][p][k] = []
@@ -224,6 +224,7 @@ for g in graphs:
                 with open('A_experiments.pkl', 'wb') as myfile:
                     pickle.dump(layouts, myfile)
                 print()
+                myfile.close()
 
 
 with open('A_experiments.pkl', 'wb') as myfile:
