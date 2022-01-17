@@ -82,11 +82,11 @@ class SGD_MDS2:
 @jit(nopython=True)
 def satisfy(v,u,di,step):
 
-    if di == 1:
+    if True:
 
         wc = step
         pq = v-u #Vector between points
-        mag = np.linalg.norm(pq)
+        mag = norm(pq)
 
         wc = 1*step
         if wc > 1:

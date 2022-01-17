@@ -4,6 +4,7 @@ import scipy.io
 import time
 import modules.distance_matrix as distance_matrix
 from SGD_MDS import SGD_MDS
+from SGD_MDS2 import SGD_MDS2
 import modules.graph_io as graph_io
 
 

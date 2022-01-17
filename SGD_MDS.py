@@ -13,12 +13,12 @@ import random
 norm = lambda x: np.linalg.norm(x,ord=2)
 
 @jit(nopython=True)
-def satisfy(v,u,we,di,step):
+def satisfy(v,u,di,we,step):
 
     wc = step
     pq = v-u #Vector between points
     #mag = geodesic(self.X[i],self.X[j])
-    mag = norm(pq)
+    mag = np.linalg.norm(pq)
     #r = (mag-self.d[i][j])/2 #min distance to satisfy constraint
     wc = we*step
 
@@ -44,7 +44,7 @@ def solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False):
 
     for count in range(num_iter):
         for i,j in indices:
-            X[i],X[j] = satisfy(w[i][j],d[i][j],X[i],X[j],step)
+            X[i],X[j] = satisfy(X[i],X[j],d[i][j],w[i][j],step)
 
         step = schedule[min(count,len(schedule)-1)]
         shuffle(indices)
@@ -80,11 +80,16 @@ class SGD_MDS:
         epsilon = 0.1
         self.eta_min = epsilon/self.w_max
 
+    def get_sched(self,num_iter):
+        lamb = np.log(self.eta_min/self.eta_max)/(num_iter-1)
+        sched = lambda count: self.eta_max*np.exp(lamb*count)
+        return np.array([sched(count) for count in range(num_iter)])
 
-    def solve(self):
+    def solve(self,num_iter=15,debug=False):
         indices = np.array(list(itertools.combinations(range(self.n), 2)))
-
-
+        schedule = self.get_sched(num_iter)
+        self.X = solve(self.X,self.w,self.d,schedule,indices,num_iter=num_iter,debug=debug)
+        return self.X
 
 
 
