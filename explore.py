@@ -237,5 +237,16 @@ def draw_increase_k():
     # G.save('fpga.dot')
 
 if __name__ == "__main__":
-    main()
+    #main()
+
+    import os
+
+    directory = 'graphs'
+    for filename in os.scandir(directory):
+        if filename.is_file():
+            print(filename.path)
+            G = graph_io.load_graph(filename.path)
+            newpath = 'dot-graphs/' + filename.path.split('/')[1].split('.')[0] + '.dot'
+            G.save(newpath,fmt='dot')
+            #
     print(1000*1e-5)

@@ -5,12 +5,51 @@ import matplotlib.pyplot as plt
 from math import sqrt
 import itertools
 
-
+from numba import jit
 
 import math
 import random
 
 norm = lambda x: np.linalg.norm(x,ord=2)
+
+@jit(nopython=True)
+def satisfy(v,u,we,di,step):
+
+    wc = step
+    pq = v-u #Vector between points
+    #mag = geodesic(self.X[i],self.X[j])
+    mag = norm(pq)
+    #r = (mag-self.d[i][j])/2 #min distance to satisfy constraint
+    wc = we*step
+
+    # if we < 0.9 and random.random()<0.1:
+    #     r = (mag-10*self.d_max)/2
+    #     wc = step
+    # elif we > 0.9:
+    r = (mag-(di))/2
+
+    if wc > 1:
+        wc = 1
+    r = wc*r
+    m = (pq*r) /mag
+
+    return v-m, u+m
+
+@jit(nopython=True)
+def solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False):
+    step = 1
+    shuffle = random.shuffle
+    shuffle(indices)
+
+
+    for count in range(num_iter):
+        for i,j in indices:
+            X[i],X[j] = satisfy(w[i][j],d[i][j],X[i],X[j],step)
+
+        step = schedule[min(count,len(schedule)-1)]
+        shuffle(indices)
+
+    return X
 
 
 class SGD_MDS:
@@ -42,47 +81,12 @@ class SGD_MDS:
         self.eta_min = epsilon/self.w_max
 
 
-    def solve(self,num_iter=15,epsilon=1e-3,debug=False):
-        current_error,delta_e,step,count = 1000,1,self.eta_max,0
-        #indices = [i for i in range(len(self.d))]
-        indices = list(itertools.combinations(range(self.n), 2))
-        random.shuffle(indices)
-        #random.shuffle(indices)
+    def solve(self):
+        indices = np.array(list(itertools.combinations(range(self.n), 2)))
 
-        X = self.X
-        w = self.w
-        d = self.d
-        def satisfy(we,di,v,u,step):
 
-            wc = step
-            pq = v-u #Vector between points
-            #mag = geodesic(self.X[i],self.X[j])
-            mag = norm(pq)
-            #r = (mag-self.d[i][j])/2 #min distance to satisfy constraint
-            wc = we*step
 
-            # if we < 0.9 and random.random()<0.1:
-            #     r = (mag-10*self.d_max)/2
-            #     wc = step
-            # elif we > 0.9:
-            r = (mag-(di))/2
 
-            if wc > 1:
-                wc = 1
-            r = wc*r
-            m = (pq*r) /mag
-
-            return v-m, u+m
-
-        for count in range(num_iter):
-            for i,j in indices:
-                X[i],X[j] = satisfy(w[i][j],d[i][j],X[i],X[j],step)
-
-            step = self.compute_step_size(count,num_iter)
-            random.shuffle(indices)
-
-        self.X = X
-        return self.X
 
     def calc_stress(self):
         stress = 0
@@ -123,8 +127,6 @@ def normalize(v):
     mag = pow(v[0]*v[0]+v[1]*v[1],0.5)
     return v/mag
 
-def geodesic(xi,xj):
-    return euclid_dist(xi,xj)
 
 def choose(n,k):
     product = 1
@@ -133,37 +135,7 @@ def choose(n,k):
     return product
 
 
-def bfs(G,start):
-    queue = [start]
-    discovered = [start]
-    distance = {start: 0}
 
-    while len(queue) > 0:
-        v = queue.pop()
-
-        for w in G.neighbors(v):
-            if w not in discovered:
-                discovered.append(w)
-                distance[w] =  distance[v] + 1
-                queue.insert(0,w)
-
-    myList = []
-    for x in G.nodes:
-        if x in distance:
-            myList.append(distance[x])
-        else:
-            myList.append(len(G.nodes)+1)
-
-    return myList
-
-def all_pairs_shortest_path(G):
-    d = [ [ -1 for i in range(len(G.nodes)) ] for j in range(len(G.nodes)) ]
-
-    count = 0
-    for node in G.nodes:
-        d[count] = bfs(G,node)
-        count += 1
-    return d
 
 def scale_matrix(d,new_max):
     d_new = np.zeros(d.shape)
@@ -177,40 +149,6 @@ def scale_matrix(d,new_max):
             d_new[j][i] = m
     return d_new
 
-
-def euclid_dist(x1,x2):
-    x = x2[0]-x1[0]
-    y = x2[1]-x1[1]
-    return pow(x*x+y*y,0.5)
-
-def save_euclidean(X,number):
-    pos = {}
-    count = 0
-    for i in G.nodes():
-        x,y = X[count]
-        pos[i] = [x,y]
-        count += 1
-    nx.draw(G,pos=pos,with_labels=True)
-    plt.savefig('test'+str(number)+'.png')
-    plt.clf()
-
-def output_euclidean(G,X):
-    pos = {}
-    count = 0
-    for x in G.nodes():
-        pos[x] = X[count]
-        count += 1
-    nx.draw(G,pos=pos)
-    plt.show()
-    plt.clf()
-
-    count = 0
-    for i in G.nodes():
-        x,y = X[count]
-        G.nodes[i]['pos'] = str(100*x) + "," + str(100*y)
-
-        count += 1
-    nx.drawing.nx_agraph.write_dot(G, "output.dot")
 
 def set_w(d,k):
     f = np.zeros(d.shape)
