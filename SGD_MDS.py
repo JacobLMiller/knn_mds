@@ -22,11 +22,12 @@ def satisfy(v,u,di,we,step):
     #r = (mag-self.d[i][j])/2 #min distance to satisfy constraint
     wc = we*step
 
-    # if we < 0.9 and random.random()<0.1:
-    #     r = (mag-10*self.d_max)/2
-    #     wc = step
-    # elif we > 0.9:
     r = (mag-(di))/2
+    if we < 0.9 and random.random()<0.1:
+        r = (mag-10*6)/2
+        wc = step
+    # elif we > 0.9:
+
 
     if wc > 1:
         wc = 1

@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 #import tensorflow as tf
 from math import sqrt
 import itertools
-import scipy
+
 from numba import jit
 
 import math
@@ -12,6 +12,97 @@ import random
 
 norm = lambda x: np.linalg.norm(x,ord=2)
 
+@jit(nopython=True)
+def satisfy(v,u,di,we,step,t=1):
+    #t=0.0001
+
+    if we >= 1:
+        wc = step
+        pq = v-u #Vector between points
+        #mag = geodesic(self.X[i],self.X[j])
+        mag = np.linalg.norm(pq)
+        #r = (mag-self.d[i][j])/2 #min distance to satisfy constraint
+        wc = we*step
+
+        # if we < 0.9 and random.random()<0.1:
+        #     r = (mag-10*self.d_max)/2
+        #     wc = step
+        # elif we > 0.9:
+        r = (mag-(di))/2
+
+        if wc > 1:
+            wc = 1
+        r = wc*r
+        m = (pq*r) /mag
+
+        return v-m, u+m
+    else:
+        wc = step
+        pq = v-u
+        mag = np.linalg.norm(pq)
+        if wc > 1:
+            wc = 1
+        elif wc <= 0.5:
+            wc = 0
+
+        r = pq/(2*mag)
+        m = -1*r
+        return v-m,u+m
+
+@jit(nopython=True)
+def old_satisfy(v,u,di,we,step,t=1):
+
+    wc = step
+    pq = v-u #Vector between points
+    #mag = geodesic(self.X[i],self.X[j])
+    mag = np.linalg.norm(pq)
+    #r = (mag-self.d[i][j])/2 #min distance to satisfy constraint
+    wc = (1/pow(di,2))*step
+
+    # if we < 0.9 and random.random()<0.1:
+    #     r = (mag-10*self.d_max)/2
+    #     wc = step
+    # elif we > 0.9:
+    r = (mag-(di))/2
+
+    if wc > 1:
+        wc = 1
+    r = wc*r
+    m = (pq*r) /mag
+
+    return v-m, u+m
+
+@jit(nopython=True)
+def solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False,t=1):
+    step = 1
+    shuffle = random.shuffle
+    shuffle(indices)
+
+
+    for count in range(num_iter):
+        for i,j in indices:
+            X[i],X[j] = satisfy(X[i],X[j],d[i][j],w[i][j],step,t=t)
+
+        step = schedule[min(count,len(schedule)-1)]
+        shuffle(indices)
+
+    return X
+
+@jit(nopython=True)
+def debug_solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False,t=1):
+    step = 1
+    shuffle = random.shuffle
+    shuffle(indices)
+
+
+    for count in range(num_iter):
+        for i,j in indices:
+            X[i],X[j] = satisfy(X[i],X[j],d[i][j],w[i][j],step,t=t)
+        step = schedule[min(count,len(schedule)-1)]
+        shuffle(indices)
+        yield X.copy()
+
+    return X
 
 
 class SGD_MDS2:
@@ -31,6 +122,7 @@ class SGD_MDS2:
         a = 1
         b = 1
         if weighted:
+            # self.w = set_w(self.d,k)
             self.w = w
         else:
             self.w = np.array([[ 1 if i != j else 0 for i in range(self.n)]
@@ -42,14 +134,35 @@ class SGD_MDS2:
         epsilon = 0.1
         self.eta_min = epsilon/self.w_max
 
+    def get_sched(self,num_iter):
+        lamb = np.log(self.eta_min/self.eta_max)/(num_iter-1)
+        sched = lambda count: self.eta_max*np.exp(lamb*count)
+        return np.array([sched(count) for count in range(num_iter)])
+
+    def solve(self,num_iter=15,debug=False,t=1):
+        indices = np.array(list(itertools.combinations(range(self.n), 2)))
+        schedule = self.get_sched(num_iter)
+
+        if debug:
+            solve_step = debug_solve(self.X,self.w,self.d,schedule,indices,num_iter=num_iter,debug=debug,t=t)
+            #print(next(solve_step))
+            return [x for x in solve_step]
+        self.X = solve(self.X,self.w,self.d,schedule,indices,num_iter=num_iter,debug=debug,t=t)
+        return self.X
+
 
 
     def calc_stress(self):
         stress = 0
+        #normalize matrices
+        d = self.d/np.max(self.d)
+        X = self.X/np.max(self.X)
         for i in range(self.n):
-            for j in range(i):
-                stress += self.w[i][j]*pow(geodesic(self.X[i],self.X[j])-self.d[i][j],2)
-        return pow(stress,0.5)
+            for j in range(self.n):
+                if i != j:
+                    stress += pow(self.d[i][j] - norm(self.X[i]-self.X[j]),2)
+        print(np.sum(np.square(self.d)))
+        return stress / np.sum(np.square(self.d))
 
     def calc_distortion(self):
         distortion = 0
@@ -69,7 +182,7 @@ class SGD_MDS2:
         return dy_dx
 
     def compute_step_size(self,count,num_iter):
-        #return 1/pow(5+count,1)
+        return 1/pow(5+count,1)
 
         lamb = math.log(self.eta_min/self.eta_max)/(num_iter-1)
         return self.eta_max*math.exp(lamb*count)
@@ -79,65 +192,10 @@ class SGD_MDS2:
         return [random.uniform(-1,1),random.uniform(-1,1)]
 
 
-@jit(nopython=True)
-def satisfy(v,u,di,step):
-
-    if True:
-
-        wc = step
-        pq = v-u #Vector between points
-        mag = norm(pq)
-
-        wc = 1*step
-        if wc > 1:
-            wc = 1
-
-        # if we < 0.9 and random.random()<0.1:
-        #     r = (mag-10*self.d_max)/2
-        #     wc = step
-        # elif we > 0.9:
-
-        r = (mag-di)/2
-        r = wc*r
-        m = (pq*r) /mag
-
-        return v-m, u+m
-
-    elif di != 1:
-        pq = v-u
-        mag = np.linalg.norm(pq)
-        r = mag/2
-        step = step if step <= 1 else 1
-        m = (pq*r*step) /mag
-
-        m *= 1
-        return v-m, u+m
-
-@jit(nopython=True)
-def step_func(count):
-    return 1/(5+count)
-
-@jit(nopython=True)
-def solve(X,d,indices,num_iter=15,epsilon=1e-3,debug=False):
-
-    step = 1
-    shuffle = random.shuffle
-
-    for count in range(num_iter):
-        for i,j in indices:
-            X[i],X[j] = satisfy(X[i],X[j],d[i][j],step)
-
-        step = step_func(count)
-        shuffle(indices)
-
-    return X
-
 def normalize(v):
     mag = pow(v[0]*v[0]+v[1]*v[1],0.5)
     return v/mag
 
-def geodesic(xi,xj):
-    return euclid_dist(xi,xj)
 
 def choose(n,k):
     product = 1
@@ -146,37 +204,7 @@ def choose(n,k):
     return product
 
 
-def bfs(G,start):
-    queue = [start]
-    discovered = [start]
-    distance = {start: 0}
 
-    while len(queue) > 0:
-        v = queue.pop()
-
-        for w in G.neighbors(v):
-            if w not in discovered:
-                discovered.append(w)
-                distance[w] =  distance[v] + 1
-                queue.insert(0,w)
-
-    myList = []
-    for x in G.nodes:
-        if x in distance:
-            myList.append(distance[x])
-        else:
-            myList.append(len(G.nodes)+1)
-
-    return myList
-
-def all_pairs_shortest_path(G):
-    d = [ [ -1 for i in range(len(G.nodes)) ] for j in range(len(G.nodes)) ]
-
-    count = 0
-    for node in G.nodes:
-        d[count] = bfs(G,node)
-        count += 1
-    return d
 
 def scale_matrix(d,new_max):
     d_new = np.zeros(d.shape)
@@ -190,40 +218,6 @@ def scale_matrix(d,new_max):
             d_new[j][i] = m
     return d_new
 
-
-def euclid_dist(x1,x2):
-    x = x2[0]-x1[0]
-    y = x2[1]-x1[1]
-    return pow(x*x+y*y,0.5)
-
-def save_euclidean(X,number):
-    pos = {}
-    count = 0
-    for i in G.nodes():
-        x,y = X[count]
-        pos[i] = [x,y]
-        count += 1
-    nx.draw(G,pos=pos,with_labels=True)
-    plt.savefig('test'+str(number)+'.png')
-    plt.clf()
-
-def output_euclidean(G,X):
-    pos = {}
-    count = 0
-    for x in G.nodes():
-        pos[x] = X[count]
-        count += 1
-    nx.draw(G,pos=pos)
-    plt.show()
-    plt.clf()
-
-    count = 0
-    for i in G.nodes():
-        x,y = X[count]
-        G.nodes[i]['pos'] = str(100*x) + "," + str(100*y)
-
-        count += 1
-    nx.drawing.nx_agraph.write_dot(G, "output.dot")
 
 def set_w(d,k):
     f = np.zeros(d.shape)

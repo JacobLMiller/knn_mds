@@ -5,8 +5,8 @@ import networkx as nx
 import numpy as np
 import matplotlib.pyplot as plt
 #import tensorflow as tf
-from math import sqrt
-
+import numba as nb
+from numba import jit
 
 import math
 import random
@@ -15,10 +15,141 @@ import copy
 import time
 import os
 
+
+@jit(nopython=True)
+def part_of_dist_hyper(xi,xj):
+    r,t = xi
+    a,b = xj
+    sinh = np.sinh
+    cosh = np.cosh
+    #print(np.cosh(y1)*np.cosh(x2-x1)*np.cosh(y2)-np.sinh(y1)*np.sinh(y2))
+    return np.cos(b-t)*sinh(a)*sinh(r)-cosh(a)*cosh(r)
+
+@jit(nopython=True)
+def grad_dist(p,q):
+    r,t = p
+    a,b = q
+    sin = np.sin
+    cos = np.cos
+    sinh = np.sinh
+    cosh = np.cosh
+    bottom = 1/pow(pow(part_of_dist_hyper(p,q),2)-1,0.5)
+
+    #delta_a = -(cos(b-t)*sinh(r)*cosh(a)-sinh(a)*cosh(r))*bottom
+    #delta_b = (sin(b-t)*sinh(a)*sinh(r))*bottom
+
+    delta_r = -1*(cos(b-t)*sinh(a)*cosh(r)-sinh(r)*cosh(a))*bottom
+    delta_t = -1*(sin(b-t)*sinh(a)*sinh(r))*bottom
+
+    return np.array([delta_r,delta_t])
+
+@jit(nopython=True)
+def step_func(count):
+    return 1/(5+count)
+
+@jit(nopython=True)
+def calc_stress(X,d,w):
+    """
+    Calculates the standard measure of stress: \sum_{i,j} w_{i,j}(dist(Xi,Xj)-D_{i,j})^2
+    Or, in English, the square of the difference of the realized distance and the theoretical distance,
+    weighted by the table w, and summed over all pairs.
+    """
+    stress = 0
+    for i in range(len(X)):
+        for j in range(i):
+            stress += w[i][j]*pow(geodesic(X[i],X[j])-d[i][j],2)
+    return pow(stress,0.5)
+
+@jit(nopython=True)
+def set_step(w_max,eta_max,eta_min):
+    a = 1/w_max
+    b = -np.log(eta_min/eta_max)/(15-1)
+    step = lambda count: a/(pow(1+b*count,0.5))
+    return np.array([step(count) for count in range(15)])
+
+@jit(nopython=True)
+def classic_solver(X,d,w,num_iter=1000,epsilon=1e-3,debug=False,t=1):
+    step = 0.1
+    shuffle = random.shuffle
+    n = len(d)
+    schedule = set_step(1,pow(np.max(d),2),0.1/1)
+
+    dist = np.linalg.norm
+
+    for count in range(num_iter):
+
+        gradient = np.zeros(X.shape)
+        for i in range(n):
+            for j in range(n):
+                if i !=j:
+                    pq = X[i]-X[j]
+                    mag = dist(X[i]-X[j])
+                    dist_grad = pq/mag
+                    if w[i][j] == 1:
+                        gradient[i] += 2*dist_grad*(mag-d[i][j])
+                    else:
+                        gradient[i] -= t*dist_grad
+
+        step = 1/(1+count*2)
+        if step > 0.1:
+            step = 0.1
+
+        diff = -step * gradient
+        X += diff
+        if np.all(np.abs(diff) <= epsilon):
+            print("Converged after " + str(count) + " iterations.")
+            break
+
+    return X
+
+@jit(nopython=True)
+def classic_solver_debug(X,d,w,num_iter=1000,epsilon=1e-3,debug=False,t=1):
+    step = 0.1
+    shuffle = random.shuffle
+    n = len(d)
+    schedule = set_step(1,pow(np.max(d),2),0.1/1)
+
+    dist = np.linalg.norm
+
+    for count in range(num_iter):
+
+        gradient = np.zeros(X.shape)
+        for i in range(n):
+            for j in range(n):
+                if i !=j:
+                    pq = X[i]-X[j]
+                    mag = dist(X[i]-X[j])
+                    dist_grad = pq/mag
+                    if w[i][j] == 1:
+                        gradient[i] += 2*dist_grad*(mag-d[i][j])
+                    else:
+                        gradient[i] -= t*dist_grad
+
+        step = 1/(1+count*2)
+        if step > 0.001:
+            step = 0.001
+
+        diff = -step * gradient
+        X += diff
+        print(calc_stress(X,d,w))
+        yield X.copy()
+        # if np.all(np.abs(diff) <= epsilon):
+        #     print("Converged after " + str(count) + " iterations.")
+        #     break
+
+    return X
+
+
 class MDS:
-    def __init__(self,dissimilarities,w = 1,geometry='euclidean',init_pos=np.array([])):
-        #self.d = scale_matrix(dissimilarities,math.pi)
+    def __init__(self,dissimilarities,weighted=False,w=None,geometry='euclidean',init_pos=np.array([])):
         self.d = dissimilarities
+        self.d_max = np.max(dissimilarities)
+
+        #self.d = self.d*(2*math.pi/self.d_max)
+        self.d_min = 1
+        self.n = len(self.d)
+        if self.n > 30:
+            self.d = self.d*(10/self.d_max)
         self.d_max = np.max(dissimilarities)
         self.d_min = 1
         self.n = len(self.d)
@@ -31,53 +162,35 @@ class MDS:
                 self.X[i] = self.init_point()
             self.X = np.asarray(self.X)
 
-        self.w = [[ 1 if i != j else 0 for i in range(self.n)]
-                    for j in range(self.n)]
-        self.w = w
-        for i in range(len(self.d)):
-            self.w[i][i] = 0
+        if weighted == False:
+
+            self.w = np.array([[ 1/pow(self.d[i][j],2) if i != j else 0 for i in range(self.n)]
+                        for j in range(self.n)])
+            for i in range(len(self.d)):
+                self.w[i][i] = 0
+        else:
+            self.w = w
 
         w_min = 1/pow(self.d_max,2)
-        self.w_max = 1/pow(self.d_min,2)
+        w_max = 1/pow(self.d_min,2)
         self.eta_max = 1/w_min
         epsilon = 0.1
-        self.eta_min = epsilon/self.w_max
+        self.eta_min = epsilon/w_max
 
-    def solve(self,num_iter=100,epsilon=1e-3,debug=True):
-        current_error,error,step,count = 1000,1,1,0
-        prev_error = 1000000
+    def solve(self,num_iter=1000,epsilon=1e-3,debug=False,t=1):
+        X = self.X
+        d = self.d
+        w = self.w
+        if debug:
+            solve_step = classic_solver_debug(X,d,w,num_iter)
+            #print(next(solve_step))
+            Xs = [x for x in solve_step]
+            self.stress_hist = [calc_stress(x,d,w) for x in Xs]
+            self.X =  Xs[-1]
+            return
 
-        indices = [i for i in range(self.n)]
-        random.shuffle(indices)
-        X = np.asarray(self.X)
-
-        while count < num_iter:
-            # Do all calculations under a "GradientTape" which tracks all gradients
-            loss = np.zeros(X.shape)
-            for i in range(len(X)):
-                for j in range(len(X)):
-                    if i != j:
-                        dist = self.geodesic(X[i],X[j])
-                        loss[i] += 2*self.w[i][j]*self.grad(X[i],X[j])*((dist-self.d[i][j])/2)
-                        #loss[i] = normalize(loss[i])
-            step = self.compute_step_size(count,num_iter)
-            step = step if step < 0.1 else 0.1
-            step = 0.01
-            X = X - step*loss
-            self.X = X
-            stress = self.calc_stress()
-            if abs(stress-prev_error) < epsilon:
-                break
-            prev_error = stress
-
-            if debug:
-                print(count)
-                print(stress)
-                print()
-
-            count += 1
+        X = classic_solver(X,d,w,num_iter,t=1)
         self.X = X
-        return self.X
 
     def geodesic(self,xi,xj):
         if self.geometry == 'euclidean':
@@ -107,7 +220,7 @@ class MDS:
         for i in range(len(self.d)):
             for j in range(i):
                 stress += self.w[i][j]*pow(self.geodesic(self.X[i],self.X[j])-self.d[i][j],2)
-        return stress
+        return pow(stress,0.5)
 
     def calc_stress1(self,X0,wrt,i):
         stress = 0
@@ -124,11 +237,8 @@ class MDS:
         return (1/choose(self.n,2))*distortion
 
     def compute_step_size(self,count,num_iter):
-        # lamb = math.log(self.eta_min/self.eta_max)/(num_iter-1)
-        # return self.eta_max*math.exp(lamb*count)
-        a = 1
-        b = 1#-math.log(self.eta_min/self.eta_max)/(num_iter-1)
-        return a/(pow(1+b*count,0.5))
+        lamb = math.log(self.eta_min/self.eta_max)/(num_iter-1)
+        return self.eta_max*math.exp(lamb*count)
 
 
     def init_point(self):
@@ -154,8 +264,6 @@ def hyper_grad(p,q):
     sinh = np.sinh
     cosh = np.cosh
     bottom = 1/pow(pow(part_of_dist_hyper(p,q),2)-1,0.5)
-    if np.isinf(bottom):
-        bottom = 1000
 
     #delta_a = -(cos(b-t)*sinh(r)*cosh(a)-sinh(a)*cosh(r))*bottom
     #delta_b = (sin(b-t)*sinh(a)*sinh(r))*bottom
@@ -165,20 +273,12 @@ def hyper_grad(p,q):
 
     return np.array([delta_r,delta_t])
 
-def part_of_dist_hyper(xi,xj):
-    r,t = xi
-    a,b = xj
-    sinh = np.sinh
-    cosh = np.cosh
-    #print(np.cosh(y1)*np.cosh(x2-x1)*np.cosh(y2)-np.sinh(y1)*np.sinh(y2))
-    return np.cos(b-t)*sinh(a)*sinh(r)-cosh(a)*cosh(r)
+
 
 def sphere_grad(p,q):
     lamb1,phi1 = p
     lamb2,phi2 = q
     bottom = 1/pow(1-pow(part_of_dist_sphere(p,q),2),0.5)
-    if np.isinf(bottom):
-        bottom = 1000
     sin = np.sin
     cos = np.cos
     x = -sin(lamb2-lamb1)*cos(phi2)*cos(phi1)*bottom
@@ -374,8 +474,9 @@ def main():
     print(d)
 
     #all_three(d)
-    Y = MDS(d,geometry='spherical')
+    Y = MDS(d,geometry='euclidean')
     Y.solve(1000)
     print(Y.calc_stress())
-    output_sphere(G,Y.X)
+    output_euclidean(G,Y.X)
+
 #main()
