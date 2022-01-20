@@ -42,11 +42,9 @@ def satisfy(v,u,di,we,step,t=1):
         mag = np.linalg.norm(pq)
         if wc > 1:
             wc = 1
-        elif wc <= 0.5:
-            wc = 0
 
-        r = pq/(2*mag)
-        m = -1*r
+        r = pq/(mag)
+        m = -t*r
         return v-m,u+m
 
 @jit(nopython=True)

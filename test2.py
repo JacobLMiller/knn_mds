@@ -33,7 +33,7 @@ def get_neighborhood(X,d,rg = 1):
         for j in range(len(k_theory[i])):
             if k_theory[i][j] in k_embedded[i]:
                 count_intersect += 1
-        sum += count_intersect/(len(k_theory[i]) + len(k_embedded[i]) - count_intersect)
+        sum += count_intersect/(len(k_theory[i]))
 
     return sum/len(X)
 
@@ -46,7 +46,7 @@ def stress(X,d):
     return stress / np.sum(np.square(d))
 
 #G = graph_io.load_graph("graphs/dwt_419.vna")
-G = gt.lattice([10,40])
+G = gt.lattice([10,10])
 #G = gt.load_graph('graphs/block2.dot')
 #G = gt.load_graph('graphs/btree8.dot')
 d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
@@ -73,7 +73,9 @@ d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
 stress_hist = []
 neighbor_hist = []
 
-for k in range(1,20):
+T = np.linspace(0.009524787026583189,0,400)
+
+for k in [2,4,6,8] + list(range(10,401,20)):
 
     A = gt.adjacency(G).toarray()
     A = np.linalg.matrix_power(A,5)
@@ -97,8 +99,8 @@ for k in range(1,20):
                 N += 1
 
     Nc = (n*(n-1))/2 - N
-    t = (N/Nc)*np.median(d)
-
+    t = (N/Nc)*np.median(d)*0.1
+    t = T[k]
 
     Y = SGD_MDS2(d,weighted=True,w=w)
     Xs = Y.solve(num_iter=15,t=t,debug=False)
@@ -106,7 +108,7 @@ for k in range(1,20):
     X = layout_io.normalize_layout(Xs)
 
     stress_hist.append(stress(X,d_norm))
-    neighbor_hist.append(get_neighborhood(X,d))
+    neighbor_hist.append(1-get_neighborhood(X,d,3))
 
     pos = G.new_vp('vector<float>')
     pos.set_2d_array(X.T)
@@ -118,7 +120,7 @@ for k in range(1,20):
     for v in G.vertices():
         text[v] = str(v)
 
-    gt.graph_draw(G,pos=pos,output='drawings/plot/test' + str(2) + '.png')
+    #gt.graph_draw(G,pos=pos,output='drawings/plot/test' + str(2) + '.png')
 
     # Z = MDS(d,weighted=True,w=w)
     # Z.solve()
@@ -130,12 +132,14 @@ for k in range(1,20):
     # pos = G.new_vp('vector<float>')
     # pos.set_2d_array(X.T)
 
-    gt.graph_draw(G,pos=pos,output='drawings/local-global' + str(k) + '.png')
+    gt.graph_draw(G,pos=pos,output='drawings/grid' + str(k) + '.png')
 
 
 import matplotlib.pyplot as plt
-x = np.arange(21)
+x = [i for i in [2,4,6,8] + list(range(10,401,20))]
 plt.plot(x,stress_hist,label="Stress")
 plt.plot(x,neighbor_hist,label="Neighborhood")
+plt.ylim(0,1)
+plt.suptitle("FPGA")
 plt.legend()
 plt.show()
