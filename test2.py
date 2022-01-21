@@ -75,7 +75,7 @@ neighbor_hist = []
 
 T = np.linspace(0.009524787026583189,0,400)
 
-for k in [2,4,6,8] + list(range(10,401,20)):
+for k in [6]:
 
     A = gt.adjacency(G).toarray()
     A = np.linalg.matrix_power(A,5)
@@ -100,7 +100,6 @@ for k in [2,4,6,8] + list(range(10,401,20)):
 
     Nc = (n*(n-1))/2 - N
     t = (N/Nc)*np.median(d)*0.1
-    t = T[k]
 
     Y = SGD_MDS2(d,weighted=True,w=w)
     Xs = Y.solve(num_iter=15,t=t,debug=False)
