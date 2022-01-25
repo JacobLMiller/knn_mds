@@ -73,6 +73,7 @@ def classic_solver(X,d,w,num_iter=1000,epsilon=1e-3,debug=False,t=1):
     shuffle = random.shuffle
     n = len(d)
     schedule = set_step(1,pow(np.max(d),2),0.1/1)
+    t = 0
 
     dist = np.linalg.norm
 
@@ -85,14 +86,16 @@ def classic_solver(X,d,w,num_iter=1000,epsilon=1e-3,debug=False,t=1):
                     pq = X[i]-X[j]
                     mag = dist(X[i]-X[j])
                     dist_grad = pq/mag
+
                     if w[i][j] == 1:
                         gradient[i] += 2*dist_grad*(mag-d[i][j])
                     else:
-                        gradient[i] -= t*dist_grad
+                        gradient[i] -= t*(pq/(mag ** 2))
 
         step = 1/(1+count*2)
         if step > 0.1:
             step = 0.1
+        t = 0 if count < 100 else 0.06
 
         diff = -step * gradient
         X += diff
@@ -187,10 +190,11 @@ class MDS:
             Xs = [x for x in solve_step]
             self.stress_hist = [calc_stress(x,d,w) for x in Xs]
             self.X =  Xs[-1]
-            return
+            return self.X
 
         X = classic_solver(X,d,w,num_iter,t=1)
         self.X = X
+        return X
 
     def geodesic(self,xi,xj):
         if self.geometry == 'euclidean':

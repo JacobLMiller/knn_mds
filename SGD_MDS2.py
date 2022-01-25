@@ -43,7 +43,7 @@ def satisfy(v,u,di,we,step,t=1):
         if wc > 1:
             wc = 1
 
-        r = pq/(mag)
+        r = pq/(mag ** 2)
         m = -t*r
         return v-m,u+m
 
@@ -79,9 +79,10 @@ def solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False,t=1):
 
     for count in range(num_iter):
         for i,j in indices:
-            X[i],X[j] = satisfy(X[i],X[j],d[i][j],w[i][j],step,t=t)
+            X[i],X[j] = old_satisfy(X[i],X[j],d[i][j],w[i][j],step,t=t)
 
         step = schedule[min(count,len(schedule)-1)]
+        t = 0 if count < 10 else 0.6
         shuffle(indices)
 
     return X

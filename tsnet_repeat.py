@@ -154,6 +154,7 @@ def calc_LG_high(d,d_norm,G):
 def main(n=5):
     import os
     import pickle
+    import copy
 
     path = 'tsnet-graphs/'
     graph_paths = os.listdir(path)
@@ -164,13 +165,13 @@ def main(n=5):
     }
 
     template_alg = {
-        'tsnet': template_score.copy(),
-        'SGD': template_score.copy(),
-        'LG_low': template_score.copy(),
-        'LG_high':template_score.copy()
+        'tsnet': copy.deepcopy(template_score),
+        'SGD': copy.deepcopy(template_score),
+        'LG_low': copy.deepcopy(template_score),
+        'LG_high': copy.deepcopy(template_score)
     }
 
-    scores = {key : template_alg.copy() for key in graph_paths}
+    scores = {key : copy.deepcopy(template_alg) for key in graph_paths}
 
     for graph in graph_paths:
         G = gt.load_graph(path+graph)
@@ -197,6 +198,7 @@ def main(n=5):
             NP,stress = calc_LG_high(d,d_norm,G)
             scores[graph]['LG_high']['NP'][i] = NP
             scores[graph]['LG_high']['stress'][i] = stress
+
 
         with open('data/tsnet-repeat.pkl','wb') as myfile:
             pickle.dump(scores,myfile)

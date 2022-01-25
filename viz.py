@@ -53,58 +53,26 @@ def stress(X,d):
             stress += pow(np.linalg.norm(X[i]-X[j])-d[i][j],2)
     return pow(stress,0.5)
 
-with open('A_experiments.pkl', 'rb') as myfile:
-    final = pickle.load(myfile)
+with open('data/tsnet-repeat.pkl', 'rb') as myfile:
+    data = pickle.load(myfile)
 
+print(data['rajat11.dot']['tsnet'].keys())
 
-key = list(final.keys())[2]
-print(key)
+graph = data['rajat11.dot']
 
-data = []
-neighbors = []
-G = graph_io.load_graph("graphs/" + key)
-d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
-d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
+metric = 'NP'
 
+tsnet = graph['tsnet'][metric]
+SGD = graph['SGD'][metric]
+LG_low = graph['LG_low'][metric]
+LG_high = graph['LG_high'][metric]
+print(tsnet)
+print(SGD)
 
-A = 3
-As = list(final[key].keys())
-Ks = list(final[key][A].keys())
-Ks.sort()
-print(Ks)
-for i in Ks:
-    Xs = [layout_io.normalize_layout(final[key][3][i][j]) for j in range(5)]
-    dists = [dist(x,d_norm) for x in Xs]
-    neighbor = [1-get_neighborhood(x,d,2) for x in Xs]
-    data.append(dists)
-    neighbors.append(neighbor)
+plt.plot([0 for _ in range(5)],tsnet,'o',label="tsent")
+plt.plot([1 for _ in range(5)],LG_low,'o',label="LG_low")
+plt.plot([2 for _ in range(5)],LG_high,'o',label="LG_high")
+plt.plot([3 for _ in range(5)],SGD,'o',label="SGD")
 
-    # pos = G.new_vp('vector<float>')
-    # pos.set_2d_array(Xs[0].T)
-    #
-    # gt.graph_draw(G,pos=pos,output='drawings/update/400block_A'+str(i)+'k' + str(first) +'.png')
-
-print(dists)
-print(len(data))
-data = np.array(data)
-neighbors = np.array(neighbors)
-
-#x = np.arange(len(K))
-x = list(Ks)
-print(x)
-y = [np.median(data[i]) for i in range(len(x))]
-print(len(y) == len(x))
-
-#L = np.array(K)
-
-
-#
-plt.suptitle('block_400 A=3')
-plt.plot(x,y,'o-',label='Average Distortion')
-plt.plot(x,[np.median(neighbors[i]) for i in range(len(x))],'o-',label='Average Neighborhoood Score')
-#plt.xticks(ticks=np.arange(len(y)),labels=L.astype('str'))
-plt.xlabel("k")
-plt.ylabel("Score")
 plt.legend()
-plt.ylim(0,1)
 plt.show()
