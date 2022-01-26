@@ -366,7 +366,8 @@ def tsnet(X, perplexity=30, Y=None, output_dims=2, n_epochs=1000,
          initial_l_r=None, final_l_r=None, l_r_switch=None,
          r_eps=1, random_state=None,
          autostop=False, window_size=10, verbose=1):
-    random_state = check_random_state(random_state)
+    #random_state = check_random_state(random_state)
+    random_state = check_random_state(None)
 
     # Number of vertices/observations
     N = X.shape[0]

@@ -88,9 +88,11 @@ def classic_solver(X,d,w,num_iter=1000,epsilon=1e-3,debug=False,t=1):
                     dist_grad = pq/mag
 
                     if w[i][j] == 1:
-                        gradient[i] += 2*dist_grad*(mag-d[i][j])
+                        gradient[i] += t*2*dist_grad*(mag-d[i][j])
                     else:
-                        gradient[i] -= t*(pq/(mag ** 2))
+                        gradient[i] += (1-t)*2*dist_grad*(mag-d[i][j])
+
+                    gradient[i] -= (pq/(mag ** 2))
 
         step = 1/(1+count*2)
         if step > 0.1:

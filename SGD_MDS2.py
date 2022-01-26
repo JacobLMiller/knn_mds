@@ -34,6 +34,7 @@ def satisfy(v,u,di,we,step,t=1):
             wc = 1
         r = wc*r
         m = (pq*r) /mag
+        m *= t
 
         return v-m, u+m
     else:
@@ -42,9 +43,9 @@ def satisfy(v,u,di,we,step,t=1):
         mag = np.linalg.norm(pq)
         if wc > 1:
             wc = 1
-
         r = pq/(mag ** 2)
-        m = -t*r
+        r *= wc
+        m = -(1-t)*r
         return v-m,u+m
 
 @jit(nopython=True)
@@ -79,10 +80,10 @@ def solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False,t=1):
 
     for count in range(num_iter):
         for i,j in indices:
-            X[i],X[j] = old_satisfy(X[i],X[j],d[i][j],w[i][j],step,t=t)
+            X[i],X[j] = satisfy(X[i],X[j],d[i][j],w[i][j],step,t=t)
 
         step = schedule[min(count,len(schedule)-1)]
-        t = 0 if count < 10 else 0.6
+        #t = 0 if count < 10 else 0.6
         shuffle(indices)
 
     return X

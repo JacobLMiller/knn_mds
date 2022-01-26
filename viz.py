@@ -56,9 +56,9 @@ def stress(X,d):
 with open('data/tsnet-repeat.pkl', 'rb') as myfile:
     data = pickle.load(myfile)
 
-print(data['rajat11.dot']['tsnet'].keys())
+print(data.keys())
 
-graph = data['rajat11.dot']
+graph = data['block_2000.dot']
 
 metric = 'NP'
 
@@ -75,4 +75,37 @@ plt.plot([2 for _ in range(5)],LG_high,'o',label="LG_high")
 plt.plot([3 for _ in range(5)],SGD,'o',label="SGD")
 
 plt.legend()
+plt.show()
+plt.clf()
+
+row_labels = list(data.keys())
+column_labels = ["tsnet","sgd"]
+
+cell_data = []
+count_tsnet, count_sgd = 0,0
+for row in row_labels:
+    if data[row]['tsnet'][metric][0] != None:
+        tsnet = np.array(data[row]['tsnet'][metric]).mean()
+        sgd = np.array(data[row]['SGD'][metric]).mean()
+        if tsnet > sgd:
+            count_tsnet += 1
+        else:
+            count_sgd += 1
+        cell_data.append([round(tsnet,5),round(sgd,5)])
+    else:
+        cell_data.append([0,0])
+
+print("tsnet performed better on ", count_tsnet)
+print("sgd performed better on ", count_sgd)
+
+plt.table(cellText=cell_data,
+                      rowLabels=row_labels,
+                      colLabels=column_labels,
+                      loc=None,
+                      colWidths=[0.2,0.2,0.2],
+                      cellLoc='center')
+plt.xticks([])
+plt.yticks([])
+plt.axis('off')
+
 plt.show()
