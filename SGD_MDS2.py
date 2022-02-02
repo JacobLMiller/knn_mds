@@ -13,11 +13,12 @@ import random
 norm = lambda x: np.linalg.norm(x,ord=2)
 
 @jit(nopython=True)
-def satisfy(v,u,di,we,step,t=1):
+def satisfy(v,u,di,we,step,t=1,count=0):
     #t=0.0001
 
     if we >= 1:
-        wc = step
+        wc = step / pow(di,2)
+        wc = (1/pow(di,2))*step
         pq = v-u #Vector between points
         #mag = geodesic(self.X[i],self.X[j])
         mag = np.linalg.norm(pq)
@@ -49,7 +50,7 @@ def satisfy(v,u,di,we,step,t=1):
         return v-m,u+m
 
 @jit(nopython=True)
-def old_satisfy(v,u,di,we,step,t=1):
+def old_satisfy(v,u,di,we,step,t=1,count=0,max_change=0,mom=0):
 
     wc = step
     pq = v-u #Vector between points
@@ -69,22 +70,32 @@ def old_satisfy(v,u,di,we,step,t=1):
     r = wc*r
     m = (pq*r) /mag
 
-    return v-m, u+m
+
+    #m = 0.8 * mom + 0.2*m
+
+
+    new_mag = np.linalg.norm((v-m)-(u+m))
+    max_change = max(max_change,abs(mag-new_mag))
+
+    return v-m, u+m, max_change
 
 @jit(nopython=True)
 def solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False,t=1):
-    step = 1
+    step = 400
     shuffle = random.shuffle
     shuffle(indices)
+    max_change=0
 
 
     for count in range(num_iter):
+        max_change = 0
         for i,j in indices:
             X[i],X[j] = satisfy(X[i],X[j],d[i][j],w[i][j],step,t=t)
 
         step = schedule[min(count,len(schedule)-1)]
         #t = 0 if count < 10 else 0.6
         shuffle(indices)
+
 
     return X
 
@@ -98,6 +109,7 @@ def debug_solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False,t=1)
     for count in range(num_iter):
         for i,j in indices:
             X[i],X[j] = satisfy(X[i],X[j],d[i][j],w[i][j],step,t=t)
+
         step = schedule[min(count,len(schedule)-1)]
         shuffle(indices)
         yield X.copy()
