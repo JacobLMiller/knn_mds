@@ -104,6 +104,7 @@ def debug_solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False,t=1)
     step = 1
     shuffle = random.shuffle
     shuffle(indices)
+    yield X.copy()
 
 
     for count in range(num_iter):
