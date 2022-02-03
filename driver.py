@@ -14,16 +14,25 @@ def chen_neighborhood(D,X,k):
     embedded_dist = pairwise_distances(X)
     k_embed = []
     for i in range(len(embedded_dist)):
-        k_embed.append(np.argsort(embedded_dist[i])[:k])
+        k_embed.append(np.argsort(embedded_dist[i])[1:k+1])
 
     k_theory = []
     for i in range(len(D)):
-        k_theory.append(np.argsort(D[i])[:k])
+        k_theory.append(np.argsort(D[i])[1:k+1])
 
 
     N_k = 0
+    dKs = [k_theory[i][-1] for i in range(len(D))]
     for i in range(len(D)):
-        N_k += np.intersect1d(k_theory[i],k_embed[i]).size
+        dK = d[i][dKs[i]]
+        inter = 0
+
+        for j in range(len(k_embed[i])):
+            if i != j:
+                if embedded_dist[i][j] <= dK:
+                    inter += 1
+        N_k += inter
+        #N_k += np.intersect1d(k_theory[i],k_embed[i]).size
 
 
     return N_k / (len(D)*k)
@@ -87,8 +96,8 @@ G,bm = my_random_graph(50,2,prob)
 
 
 #G = gt.load_graph("graphs/fpga.dot")
-G = gt.lattice([10,10])
-#G = gt.load_graph('graphs/block2.dot')
+#G = gt.lattice([10,10])
+G = gt.load_graph('graphs/block2.dot')
 #G = gt.load_graph('graphs/btree8.dot')
 d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
 
@@ -134,11 +143,11 @@ A = np.linalg.matrix_power(A,3)
 #     w = get_w(k)
 #     for t in T:
 
-w = get_w(k=8)
+w = get_w(k=4)
 #w = gt.adjacency(G).toarray()
 
-Y = SGD_MDS2(d,weighted=False,w=w)
-Xs = Y.solve(num_iter=100,t=t,debug=True)
+Y = SGD_MDS2(d,weighted=True,w=w)
+Xs = Y.solve(num_iter=15,t=t,debug=True)
 for layout in Xs:
     print(get_neighborhood(layout,d))
 
@@ -147,16 +156,22 @@ for layout in Xs:
 X = layout_io.normalize_layout(Xs[-1])
 
 d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True,verbose=False)
-print(get_stress(X,d_norm))
 
-print(chen_neighborhood(d,X,10))
-print()
-print(avg_lcl_err(X,d_norm).mean())
 
 pos = G.new_vp('vector<float>')
 pos.set_2d_array(X.T)
 
 gt.graph_draw(G,pos=pos,vertex_fill_color=bm)
+
+
+import matplotlib.pyplot as plt
+
+percision = [chen_neighborhood(d_norm,X,k) for k in range(1,51)]
+print(percision)
+
+x =[i for i in range(1,51)]
+plt.plot(x,percision)
+plt.show()
 
 
 # count = 0

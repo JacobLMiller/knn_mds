@@ -29,8 +29,7 @@ def get_neighborhood(X,d,rg = 2):
         for j in range(len(k_theory[i])):
             if k_theory[i][j] in k_embedded[i]:
                 count_intersect += 1
-        sum += count_intersect/(2*len(k_theory[i]) - count_intersect)
-        sum /len(k_theory[i])
+        sum += count_intersect/ len(k_theory[i])
 
     return sum/len(X)
 

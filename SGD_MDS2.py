@@ -150,6 +150,7 @@ class SGD_MDS2:
     def get_sched(self,num_iter):
         lamb = np.log(self.eta_min/self.eta_max)/(num_iter-1)
         sched = lambda count: self.eta_max*np.exp(lamb*count)
+        sched = lambda count: 1/np.sqrt(count+1)
         return np.array([sched(count) for count in range(num_iter)])
 
     def solve(self,num_iter=15,debug=False,t=1):
