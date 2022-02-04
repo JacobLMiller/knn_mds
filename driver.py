@@ -10,6 +10,35 @@ import scipy.io
 from tsnet_repeat import get_neighborhood,get_stress
 from sklearn.metrics import pairwise_distances
 
+
+def get_neighborhood(X,d,rg = 2):
+    """
+    How well do the local neighborhoods represent the theoretical neighborhoods?
+    Closer to 1 is better.
+    Measure of percision: ratio of true positives to true positives+false positives
+    """
+    norm = np.linalg.norm
+    def get_k_embedded(X,k_t):
+        dist_mat = pairwise_distances(X)
+        return [np.argsort(dist_mat[i])[1:len(k_t[i])+1] for i in range(len(dist_mat))]
+
+    k_theory = [np.where((d[i] <= rg) & (d[i] > 0))[0] for i in range(len(d))]
+
+    k_embedded = get_k_embedded(X,k_theory)
+
+
+    sum = 0
+    for i in range(len(X)):
+        count_intersect = 0
+        for j in range(len(k_theory[i])):
+            if k_theory[i][j] in k_embedded[i]:
+                count_intersect += 1
+
+        sum += count_intersect/ len(k_theory[i])
+        yield count_intersect / len(k_theory[i])
+
+    return
+
 def chen_neighborhood(D,X,k):
     embedded_dist = pairwise_distances(X)
     k_embed = []
@@ -75,11 +104,11 @@ def prob(a, b):
 
    if a == b:
 
-       return 0.3
+       return 1
 
    else:
 
-       return 0.01
+       return 0
 import random
 # G, bm = gt.random_graph(400, lambda: np.random.poisson(10), directed=False,
 #
@@ -89,14 +118,18 @@ import random
 #
 #                         edge_probs=prob)
 
-G,bm = my_random_graph(50,2,prob)
+G,bm = my_random_graph(26,4,prob)
 #G.save('graphs/dummyblock.dot')
+
+# G = gt.Graph(directed=False)
+# G.add_vertex(3)
+# G.add_edge_list([(0,1),(1,2),(2,0)])
 
 #G = gt.generate_sbm(list(bm), probs, out_degs=None, directed=False, micro_ers=False, micro_degs=False)
 
 
 #G = gt.load_graph("graphs/fpga.dot")
-#G = gt.lattice([10,10])
+#G = gt.lattice([40,10])
 G = gt.load_graph('graphs/block2.dot')
 #G = gt.load_graph('graphs/btree8.dot')
 d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
@@ -142,36 +175,57 @@ A = np.linalg.matrix_power(A,3)
 #     k = k if k < G.num_vertices() else G.num_vertices()
 #     w = get_w(k)
 #     for t in T:
+    d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True,verbose=False)
 
-w = get_w(k=4)
-#w = gt.adjacency(G).toarray()
+NP = []
+stress = []
+for k in range(5,401,20):
+    w = get_w(k=k)
+    #w = gt.adjacency(G).toarray()
 
-Y = SGD_MDS2(d,weighted=True,w=w)
-Xs = Y.solve(num_iter=15,t=t,debug=True)
-for layout in Xs:
-    print(get_neighborhood(layout,d))
+    for i in range(5):
 
-#print(get_neighborhood(Xs[-1],d,1))
+        Y = SGD_MDS2(d,weighted=True,w=w)
+        Xs = Y.solve(num_iter=15,t=t,debug=False)
 
-X = layout_io.normalize_layout(Xs[-1])
+        #print(get_neighborhood(Xs[-1],d,1))
 
-d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True,verbose=False)
+        X = layout_io.normalize_layout(Xs)
+
+
+
+
+    import matplotlib.pyplot as plt
+
+    err = [x for x in get_neighborhood(X,d,2)]
+    print("Average NP", sum(err) / len(err))
+    NP.append(sum(err)/len(err))
+    stress.append(get_stress(X,d_norm))
+
+v_err = G.new_vp('float')
+v_text = G.new_vp('string')
+for v in G.iter_vertices():
+    v_err[v] = err[v]
+    v_text[v] = round(err[v],3)
+
 
 
 pos = G.new_vp('vector<float>')
 pos.set_2d_array(X.T)
 
-gt.graph_draw(G,pos=pos,vertex_fill_color=bm)
+from matplotlib import cm
+seismic = cm.get_cmap('seismic', len(err))
+
+gt.graph_draw(G,pos=pos,vertex_fill_color=v_err, vcmap=seismic,vertex_text=v_text)
 
 
 import matplotlib.pyplot as plt
-
-percision = [chen_neighborhood(d_norm,X,k) for k in range(1,51)]
-print(percision)
-
-x =[i for i in range(1,51)]
-plt.plot(x,percision)
+x = [i for i in range(5,401,20)]
+plt.plot(x,NP,label='NP')
+plt.plot(x,stress,label='stress')
+plt.legend()
 plt.show()
+
 
 
 # count = 0

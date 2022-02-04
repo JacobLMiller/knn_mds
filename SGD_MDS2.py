@@ -175,14 +175,13 @@ class SGD_MDS2:
             for j in range(self.n):
                 if i != j:
                     stress += pow(self.d[i][j] - norm(self.X[i]-self.X[j]),2)
-        print(np.sum(np.square(self.d)))
         return stress / np.sum(np.square(self.d))
 
-    def calc_distortion(self):
+    def calc_distortion(self,d):
         distortion = 0
         for i in range(self.n):
             for j in range(i):
-                distortion += abs((norm(self.X[i]-self.X[j])-self.d[i][j]))/self.d[i][j]
+                distortion += abs((norm(self.X[i]-self.X[j])-d[i][j]))/d[i][j]
         return (1/choose(self.n,2))*distortion
 
     def calc_gradient(self,i,j):
