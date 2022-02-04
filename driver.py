@@ -34,37 +34,29 @@ def get_neighborhood(X,d,rg = 2):
             if k_theory[i][j] in k_embedded[i]:
                 count_intersect += 1
 
-        sum += count_intersect/ len(k_theory[i])
-        yield count_intersect / len(k_theory[i])
+        sum += count_intersect/ (len(k_theory[i])*2 - count_intersect)
+        yield count_intersect / (len(k_theory[i])*2 - count_intersect)
 
     return
 
 def chen_neighborhood(D,X,k):
-    embedded_dist = pairwise_distances(X)
-    k_embed = []
-    for i in range(len(embedded_dist)):
-        k_embed.append(np.argsort(embedded_dist[i])[1:k+1])
+    embed_dist = pairwise_distances(X)
 
-    k_theory = []
+    percision = 0
     for i in range(len(D)):
-        k_theory.append(np.argsort(D[i])[1:k+1])
+        embed_k = np.argsort(embed_dist[i])[1:k+1]
 
 
-    N_k = 0
-    dKs = [k_theory[i][-1] for i in range(len(D))]
-    for i in range(len(D)):
-        dK = d[i][dKs[i]]
-        inter = 0
+        dK = np.argsort(D[i])[1:k+1][-1]
+        dK = D[i][dK]
 
-        for j in range(len(k_embed[i])):
-            if i != j:
-                if embedded_dist[i][j] <= dK:
-                    inter += 1
-        N_k += inter
-        #N_k += np.intersect1d(k_theory[i],k_embed[i]).size
+        count = 0
+        for j in embed_k:
+            if D[i][j] <= dK:
+                count += 1
+        percision += (count/k)
 
-
-    return N_k / (len(D)*k)
+    return percision / len(D)
 
 def avg_lcl_err(X,D):
     max_theory = np.max(D)
@@ -175,7 +167,7 @@ A = np.linalg.matrix_power(A,3)
 #     k = k if k < G.num_vertices() else G.num_vertices()
 #     w = get_w(k)
 #     for t in T:
-    d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True,verbose=False)
+d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True,verbose=False)
 
 NP = []
 stress = []
@@ -183,7 +175,9 @@ for k in range(5,401,20):
     w = get_w(k=k)
     #w = gt.adjacency(G).toarray()
 
-    for i in range(5):
+    temp_np = 0
+    temp_stress = 0
+    for i in range(1):
 
         Y = SGD_MDS2(d,weighted=True,w=w)
         Xs = Y.solve(num_iter=15,t=t,debug=False)
@@ -192,31 +186,30 @@ for k in range(5,401,20):
 
         X = layout_io.normalize_layout(Xs)
 
+        #err = [x for x in get_neighborhood(X,d,2)]
+        temp_np += chen_neighborhood(d_norm,X,20)
+        temp_stress += get_stress(X,d_norm)
 
 
 
-    import matplotlib.pyplot as plt
+    NP.append(temp_np/1)
+    stress.append(temp_stress/1)
 
-    err = [x for x in get_neighborhood(X,d,2)]
-    print("Average NP", sum(err) / len(err))
-    NP.append(sum(err)/len(err))
-    stress.append(get_stress(X,d_norm))
-
-v_err = G.new_vp('float')
-v_text = G.new_vp('string')
-for v in G.iter_vertices():
-    v_err[v] = err[v]
-    v_text[v] = round(err[v],3)
+# v_err = G.new_vp('float')
+# v_text = G.new_vp('string')
+# for v in G.iter_vertices():
+#     v_err[v] = err[v]
+#     v_text[v] = round(err[v],3)
 
 
 
-pos = G.new_vp('vector<float>')
-pos.set_2d_array(X.T)
-
-from matplotlib import cm
-seismic = cm.get_cmap('seismic', len(err))
-
-gt.graph_draw(G,pos=pos,vertex_fill_color=v_err, vcmap=seismic,vertex_text=v_text)
+# pos = G.new_vp('vector<float>')
+# pos.set_2d_array(X.T)
+#
+# from matplotlib import cm
+# seismic = cm.get_cmap('seismic', len(err))
+#
+# gt.graph_draw(G,pos=pos,vertex_fill_color=v_err, vcmap=seismic,vertex_text=v_text)
 
 
 import matplotlib.pyplot as plt
