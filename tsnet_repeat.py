@@ -37,8 +37,7 @@ def get_stress(X,d):
     stress = 0
     for i in range(len(X)):
         for j in range(len(X)):
-            if i != j:
-                stress += pow(d[i][j] - np.linalg.norm(X[i]-X[j]),2)
+            stress += pow(d[i][j] - np.linalg.norm(X[i]-X[j]),2)
     return stress / np.sum(np.square(d))
 
 def get_tsnet_layout(d,graph_name):

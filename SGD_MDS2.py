@@ -18,9 +18,9 @@ def satisfy(v,u,di,we,step,t=1,count=0):
 
     if we >= 1:
         wc = step / pow(di,2)
-        wc = (1/pow(di,2))*step
+
         pq = v-u #Vector between points
-        #mag = geodesic(self.X[i],self.X[j])
+
         mag = np.linalg.norm(pq)
         #r = (mag-self.d[i][j])/2 #min distance to satisfy constraint
         wc = we*step
@@ -35,7 +35,7 @@ def satisfy(v,u,di,we,step,t=1,count=0):
             wc = 1
         r = wc*r
         m = (pq*r) /mag
-        m *= t
+        #m *= t
 
         return v-m, u+m
     else:
@@ -80,17 +80,17 @@ def old_satisfy(v,u,di,we,step,t=1,count=0,max_change=0,mom=0):
     return v-m, u+m, max_change
 
 @jit(nopython=True)
-def solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False,t=1):
+def solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False):
     step = 400
     shuffle = random.shuffle
     shuffle(indices)
     max_change=0
-
+    t = np.count_nonzero(w)/w.size
 
     for count in range(num_iter):
         max_change = 0
         for i,j in indices:
-            X[i],X[j] = satisfy(X[i],X[j],d[i][j],w[i][j],step,t=t)
+            X[i],X[j] = satisfy(X[i],X[j],d[i][j],w[i][j],step,t=t,count=count)
 
         step = schedule[min(count,len(schedule)-1)]
         #t = 0 if count < 10 else 0.6
@@ -158,10 +158,10 @@ class SGD_MDS2:
         schedule = self.get_sched(num_iter)
 
         if debug:
-            solve_step = debug_solve(self.X,self.w,self.d,schedule,indices,num_iter=num_iter,debug=debug,t=t)
+            solve_step = debug_solve(self.X,self.w,self.d,schedule,indices,num_iter=num_iter,debug=debug)
             #print(next(solve_step))
             return [x for x in solve_step]
-        self.X = solve(self.X,self.w,self.d,schedule,indices,num_iter=num_iter,debug=debug,t=t)
+        self.X = solve(self.X,self.w,self.d,schedule,indices,num_iter=num_iter,debug=debug)
         return self.X
 
 
@@ -177,11 +177,11 @@ class SGD_MDS2:
                     stress += pow(self.d[i][j] - norm(self.X[i]-self.X[j]),2)
         return stress / np.sum(np.square(self.d))
 
-    def calc_distortion(self,d):
+    def calc_distortion(self,X,d):
         distortion = 0
         for i in range(self.n):
             for j in range(i):
-                distortion += abs((norm(self.X[i]-self.X[j])-d[i][j]))/d[i][j]
+                distortion += abs((norm(X[i]-X[j])-d[i][j]))/d[i][j]
         return (1/choose(self.n,2))*distortion
 
     def calc_gradient(self,i,j):
