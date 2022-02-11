@@ -34,7 +34,7 @@ def get_neighborhood(X,d,rg = 2):
         jaccard = intersect / (2*k_theory[i].size - intersect)
 
         sum += jaccard
-        yield jaccard
+        yield 1-jaccard
 
     return
 
@@ -197,14 +197,14 @@ G,bm = my_random_graph(100,4,prob)
 
 
 #G = gt.load_graph("graphs/dwt_419.dot")
-#G = gt.lattice([40,10])
-G = gt.load_graph('graphs/block_2000.dot')
+#G = gt.lattice([10,10])
+G = gt.load_graph('graphs/dwt_1005.dot')
 # G = gt.load_graph('graphs/btree8.dot')
 d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
 
-def get_w(k=5):
+def get_w(k=5,a=5):
     A = gt.adjacency(G).toarray()
-    A = np.linalg.matrix_power(A,5)
+    A = np.linalg.matrix_power(A,a)
     A += np.random.normal(scale=0.01,size=A.shape)
 
     #k = 10
@@ -234,10 +234,7 @@ def power(n,count):
     for i in range(count):
         yield pow(n,i)
 
-K = [x for x in power(2,12)]
 
-A = gt.adjacency(G).toarray()
-A = np.linalg.matrix_power(A,3)
 
 # for k in K:
 #     k = k if k < G.num_vertices() else G.num_vertices()
@@ -252,23 +249,24 @@ map = []
 lcl = []
 print(G.num_vertices())
 
-w = get_w(k=8)
-#w = gt.adjacency(G).toarray()
+for k in [8]:
+    w = get_w(k=k,a=21)
+    #w = gt.adjacency(G).toarray()
 
-temp_np = 0
-temp_stress = 0
+    count = 0
+    temp_stress = 0
 
-t = np.count_nonzero(w)/w.size
-Y = SGD_MDS2(d,weighted=True,w=w)
-Xs = Y.solve(num_iter=15,t=t,debug=False)
+    t = np.count_nonzero(w)/w.size
+    Y = SGD_MDS2(d,weighted=True,w=w)
+    Xs = Y.solve(num_iter=40,t=t,debug=False)
+    X = layout_io.normalize_layout(Xs)
 
-#print(get_neighborhood(Xs[-1],d,1))
-
-X = layout_io.normalize_layout(Xs)
-
-
-pos = G.new_vp('vector<float>')
-pos.set_2d_array(X.T)
-#
-gt.graph_draw(G,pos=pos)
-gt.graph_draw(G,pos=pos,output='drawings/test3/test.png')
+    stress.append(get_stress(X,d_norm))
+    pos = G.new_vp('vector<float>')
+    pos.set_2d_array(X.T)
+    #
+    gt.graph_draw(G,pos=pos,output='drawings/test3/dwt_k' + str(k) + '_' + str(count) + '.png')
+    nei = np.array([x for x in get_neighborhood(X,d)])
+    print("Avg NP score:", nei.mean())
+    print("Median NP score:", np.median(nei))
+    count += 1

@@ -14,7 +14,7 @@ norm = lambda x: np.linalg.norm(x,ord=2)
 
 @jit(nopython=True)
 def satisfy(v,u,di,we,step,t=1,count=0):
-    #t=0.0001
+    t=0.5
 
     if we >= 1:
         wc = step / pow(di,2)
@@ -23,7 +23,7 @@ def satisfy(v,u,di,we,step,t=1,count=0):
 
         mag = np.linalg.norm(pq)
         #r = (mag-self.d[i][j])/2 #min distance to satisfy constraint
-        wc = we*step
+        wc = step
 
         # if we < 0.9 and random.random()<0.1:
         #     r = (mag-10*self.d_max)/2
@@ -46,7 +46,7 @@ def satisfy(v,u,di,we,step,t=1,count=0):
             wc = 1
         r = pq/(mag ** 2)
         r *= wc
-        m = -(1-t)*r
+        m = -(t)*r
         return v-m,u+m
 
 @jit(nopython=True)
@@ -104,12 +104,14 @@ def debug_solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False,t=1)
     step = 1
     shuffle = random.shuffle
     shuffle(indices)
+    t = np.count_nonzero(w)/w.size
+
     yield X.copy()
 
 
     for count in range(num_iter):
         for i,j in indices:
-            X[i],X[j] = satisfy(X[i],X[j],d[i][j],w[i][j],step,t=t)
+            X[i],X[j] = satisfy(X[i],X[j],d[i][j],w[i][j],step,t=t,count=count)
 
         step = schedule[min(count,len(schedule)-1)]
         shuffle(indices)
