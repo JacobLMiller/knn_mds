@@ -14,7 +14,7 @@ norm = lambda x: np.linalg.norm(x,ord=2)
 
 @jit(nopython=True)
 def satisfy(v,u,di,we,step,t=1,count=0):
-    t=0.5
+
 
     if we >= 1:
         wc = step / pow(di,2)
@@ -44,7 +44,7 @@ def satisfy(v,u,di,we,step,t=1,count=0):
         mag = np.linalg.norm(pq)
         if wc > 1:
             wc = 1
-        r = pq/(mag ** 2)
+        r = (pq+1e-7)/(mag ** 2)
         r *= wc
         m = -(t)*r
         return v-m,u+m
@@ -80,12 +80,12 @@ def old_satisfy(v,u,di,we,step,t=1,count=0,max_change=0,mom=0):
     return v-m, u+m, max_change
 
 @jit(nopython=True)
-def solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False):
+def solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False,t=1):
     step = 400
     shuffle = random.shuffle
     shuffle(indices)
     max_change=0
-    t = np.count_nonzero(w)/w.size
+
 
     for count in range(num_iter):
         max_change = 0
@@ -104,17 +104,21 @@ def debug_solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False,t=1)
     step = 1
     shuffle = random.shuffle
     shuffle(indices)
-    t = np.count_nonzero(w)/w.size
+    schedule = np.array([1/(np.sqrt(count+10)) for count in range(num_iter)])
 
     yield X.copy()
 
 
     for count in range(num_iter):
-        for i,j in indices:
-            X[i],X[j] = satisfy(X[i],X[j],d[i][j],w[i][j],step,t=t,count=count)
+        t = t/2 
+        for _ in range(50):
+            for i,j in indices:
+                X[i],X[j] = satisfy(X[i],X[j],d[i][j],w[i][j],step,t=t,count=count)
 
         step = schedule[min(count,len(schedule)-1)]
         shuffle(indices)
+        print(count)
+        print(step)
         yield X.copy()
 
     return X
@@ -160,7 +164,7 @@ class SGD_MDS2:
         schedule = self.get_sched(num_iter)
 
         if debug:
-            solve_step = debug_solve(self.X,self.w,self.d,schedule,indices,num_iter=num_iter,debug=debug)
+            solve_step = debug_solve(self.X,self.w,self.d,schedule,indices,num_iter=num_iter,debug=debug,t=t)
             #print(next(solve_step))
             return [x for x in solve_step]
         self.X = solve(self.X,self.w,self.d,schedule,indices,num_iter=num_iter,debug=debug)

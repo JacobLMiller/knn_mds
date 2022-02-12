@@ -198,7 +198,7 @@ G,bm = my_random_graph(100,4,prob)
 
 #G = gt.load_graph("graphs/dwt_419.dot")
 #G = gt.lattice([10,10])
-G = gt.load_graph('graphs/dwt_1005.dot')
+G = gt.load_graph('graphs/dwt_419.dot')
 # G = gt.load_graph('graphs/btree8.dot')
 d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
 
@@ -206,6 +206,7 @@ def get_w(k=5,a=5):
     A = gt.adjacency(G).toarray()
     A = np.linalg.matrix_power(A,a)
     A += np.random.normal(scale=0.01,size=A.shape)
+    print(A)
 
     #k = 10
     k_nearest = [np.argpartition(A[i],-k)[-k:] for i in range(len(A))]
@@ -218,6 +219,7 @@ def get_w(k=5,a=5):
             if i != j:
                 w[i][j] = 1
                 w[j][i] = 1
+
 
     return w
 
@@ -249,23 +251,28 @@ map = []
 lcl = []
 print(G.num_vertices())
 
+
+
 for k in [8]:
-    w = get_w(k=k,a=21)
+    w = get_w(k=k,a=np.max(d))
     #w = gt.adjacency(G).toarray()
 
     count = 0
     temp_stress = 0
 
     t = np.count_nonzero(w)/w.size
+    t=1
     Y = SGD_MDS2(d,weighted=True,w=w)
-    Xs = Y.solve(num_iter=40,t=t,debug=False)
-    X = layout_io.normalize_layout(Xs)
+    Xs = Y.solve(num_iter=50,t=t,debug=True)
+
+    X = layout_io.normalize_layout(Xs[-1])
 
     stress.append(get_stress(X,d_norm))
     pos = G.new_vp('vector<float>')
     pos.set_2d_array(X.T)
     #
-    gt.graph_draw(G,pos=pos,output='drawings/test3/dwt_k' + str(k) + '_' + str(count) + '.png')
+    gt.graph_draw(G,pos=pos)
+    count += 1
     nei = np.array([x for x in get_neighborhood(X,d)])
     print("Avg NP score:", nei.mean())
     print("Median NP score:", np.median(nei))
