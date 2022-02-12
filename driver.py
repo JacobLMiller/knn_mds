@@ -254,7 +254,8 @@ print(G.num_vertices())
 
 
 for k in [8]:
-    w = get_w(k=k,a=np.max(d))
+    print(np.max(d))
+    w = get_w(k=k,a=int(np.max(d)/4))
     #w = gt.adjacency(G).toarray()
 
     count = 0
