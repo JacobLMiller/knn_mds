@@ -110,15 +110,15 @@ def debug_solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False,t=1)
 
 
     for count in range(num_iter):
-        t = t/2 
+        t = 1/(count+10)
         for _ in range(50):
             for i,j in indices:
                 X[i],X[j] = satisfy(X[i],X[j],d[i][j],w[i][j],step,t=t,count=count)
 
         step = schedule[min(count,len(schedule)-1)]
+        step = 0.1
         shuffle(indices)
-        print(count)
-        print(step)
+
         yield X.copy()
 
     return X
