@@ -26,7 +26,7 @@ G = gt.lattice([10,10])
 H = gt.lattice([5,20])
 G = gt.graph_union(G,H)
 G.add_edge_list([(52,103)])
-G = gt.load_graph('graphs/dwt_1005.dot')
+G = gt.load_graph('graphs/mesh3e1.dot')
 # G = gt.load_graph('graphs/btree8.dot')
 d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
 d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True,verbose=False)
@@ -80,7 +80,7 @@ k = 8
 a = int(np.max(d))
 
 print(np.max(d))
-for a in [5]:
+for a in [15]:
     w = get_w(k=8,a=a)
     #w = gt.adjacency(G).toarray()
 
@@ -90,7 +90,7 @@ for a in [5]:
     t = np.count_nonzero(w)/w.size
     t = 0.1
     Y = SGD_MDS2(d,weighted=True,w=w)
-    Xs = Y.solve(num_iter=40,t=t,debug=True)
+    Xs = Y.solve(num_iter=400,t=t,debug=True)
     Zx = Xs[-1]
 
     X = layout_io.normalize_layout(Zx)
@@ -113,4 +113,4 @@ for a in [5]:
             pos = G.new_vp('vector<float>')
             pos.set_2d_array(X.T)
             #
-            gt.graph_draw(G,pos=pos,output='drawings/dwt_k_' + str(k) + '_a' + str(a) + '_' +str(count) + '.png')
+            gt.graph_draw(G,pos=pos,output='drawings/t_mesh_k_' + str(k) + '_a' + str(a) + '_' +str(count) + '.png')

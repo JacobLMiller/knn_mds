@@ -80,6 +80,15 @@ def old_satisfy(v,u,di,we,step,t=1,count=0,max_change=0,mom=0):
     return v-m, u+m, max_change
 
 @jit(nopython=True)
+def get_stress(X,d):
+    n, stress = len(X),0
+    for i in range(n):
+        for j in range(i):
+            stress += pow(d[i][j] - np.linalg.norm(X[i]-X[j]),2) / pow(d[i][j],2)
+
+    return stress
+
+@jit(nopython=True)
 def solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False,t=1):
     step = 400
     shuffle = random.shuffle
@@ -104,6 +113,7 @@ def debug_solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False,t=1)
     step = 1
     shuffle = random.shuffle
     shuffle(indices)
+    max_change = 0
     #schedule = np.array([1/(np.sqrt(count+10)) for count in range(num_iter)])
 
     yield X.copy()
@@ -112,12 +122,19 @@ def debug_solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False,t=1)
     for count in range(num_iter):
         t = 1/(count+10) if count < 20 else 0
         for _ in range(40):
+            max_change = 0
             for i,j in indices:
+                before = np.linalg.norm(X[i]-X[j])
                 X[i],X[j] = satisfy(X[i],X[j],d[i][j],w[i][j],step,t=t,count=count)
+                after = np.linalg.norm(X[i]-X[j])
+                max_change = max(max_change, abs(after-before))
+            if max_change < 1e-5:
+                break
 
         step = schedule[min(count,len(schedule)-1)]
         step = 0.1
         shuffle(indices)
+        print(get_stress(X,d))
 
         yield X.copy()
 
