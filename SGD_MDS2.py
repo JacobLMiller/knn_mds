@@ -16,7 +16,7 @@ norm = lambda x: np.linalg.norm(x,ord=2)
 def satisfy(v,u,di,we,step,t=1,count=0):
 
 
-    if we >= 1:
+    if we >= 1 or count < 1:
         wc = step / pow(di,2)
 
         pq = v-u #Vector between points
@@ -42,9 +42,9 @@ def satisfy(v,u,di,we,step,t=1,count=0):
         wc = step
         pq = v-u
         mag = np.linalg.norm(pq)
-        if wc > 1:
-            wc = 1
-        r = (pq+1e-7)/(mag ** 2)
+        if wc > 0.1:
+            wc = 0.1
+        r = pq/(mag **2)
         r *= wc
         m = -(t)*r
         return v-m,u+m
@@ -104,14 +104,14 @@ def debug_solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False,t=1)
     step = 1
     shuffle = random.shuffle
     shuffle(indices)
-    schedule = np.array([1/(np.sqrt(count+10)) for count in range(num_iter)])
+    #schedule = np.array([1/(np.sqrt(count+10)) for count in range(num_iter)])
 
     yield X.copy()
 
 
     for count in range(num_iter):
-        t = 1/(count+10)
-        for _ in range(50):
+        t = 1/(count+10) if count < 20 else 0
+        for _ in range(40):
             for i,j in indices:
                 X[i],X[j] = satisfy(X[i],X[j],d[i][j],w[i][j],step,t=t,count=count)
 

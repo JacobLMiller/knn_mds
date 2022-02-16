@@ -5,45 +5,15 @@ import modules.distance_matrix as distance_matrix
 import modules.thesne as thesne
 
 from SGD_MDS2 import SGD_MDS2
+from SGD_MDS import SGD_MDS
 
 from sklearn.metrics import pairwise_distances
 
-def get_neighborhood(X,d,rg = 2):
-    """
-    How well do the local neighborhoods represent the theoretical neighborhoods?
-    Closer to 1 is better.
-    Measure of percision: ratio of true positives to true positives+false positives
-    """
-    norm = np.linalg.norm
-    def get_k_embedded(X,k_t):
-        dist_mat = pairwise_distances(X)
-        return [np.argsort(dist_mat[i])[1:len(k_t[i])+1] for i in range(len(dist_mat))]
-
-    k_theory = [np.where((d[i] <= rg) & (d[i] > 0))[0] for i in range(len(d))]
-
-    k_embedded = get_k_embedded(X,k_theory)
-
-
-    sum = 0
-    for i in range(len(X)):
-        count_intersect = 0
-        intersect = np.intersect1d(k_theory[i],k_embedded[i]).size
-        jaccard = intersect / (2*k_theory[i].size - intersect)
-
-        sum += jaccard
-
-    return sum/len(X)
-
-def get_stress(X,d):
-    stress = 0
-    for i in range(len(X)):
-        for j in range(len(X)):
-            stress += pow(d[i][j] - np.linalg.norm(X[i]-X[j]),2)
-    return stress / np.sum(np.square(d))
+from metrics import get_norm_stress,get_neighborhood
 
 def get_w(G,k=5):
     A = gt.adjacency(G).toarray()
-    A = np.linalg.matrix_power(A,5)
+    A = np.linalg.matrix_power(A,15)
     A += np.random.normal(scale=0.01,size=A.shape)
 
     #k = 10
@@ -60,8 +30,14 @@ def get_w(G,k=5):
     return w
 
 def calc_LG(d,d_norm,G,k=8):
-    X = SGD_MDS2(d,weighted=True,w=get_w(G,k=k)).solve()
-    return get_neighborhood(X,d),get_stress(X,d_norm)
+    X = SGD_MDS2(d,weighted=True,w=get_w(G,k=k)).solve(40,debug=True)
+    X = layout_io.normalize_layout(X[-1])
+    return get_neighborhood(X,d),get_norm_stress(X,d_norm)
+
+def calc_high(d,d_norm,G,k=8):
+    X = SGD_MDS(d).solve()
+    X = layout_io.normalize_layout(X)
+    return get_neighborhood(X,d),get_norm_stress(X,d_norm)
 
 
 def main(n=5):
@@ -100,12 +76,12 @@ def main(n=5):
             scores[graph]['LG_low']['NP'][i] = NP
             scores[graph]['LG_low']['stress'][i] = stress
 
-            NP,stress = calc_LG(d,d_norm,G,k=G.num_vertices())
+            NP,stress = calc_high(d,d_norm,G)
             scores[graph]['LG_high']['NP'][i] = NP
             scores[graph]['LG_high']['stress'][i] = stress
 
 
-        with open('data/test_low.pkl','wb') as myfile:
+        with open('data/test_low2.pkl','wb') as myfile:
             pickle.dump(scores,myfile)
         myfile.close()
 

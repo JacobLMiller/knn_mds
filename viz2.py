@@ -60,7 +60,7 @@ print(data.keys())
 
 graph = data['jazz.dot']
 
-metric = 'stress'
+metric = 'NP'
 
 #tsnet = graph['tsnet'][metric]
 #SGD = graph['SGD'][metric]

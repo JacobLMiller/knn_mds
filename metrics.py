@@ -1,3 +1,42 @@
+import numpy as np
+from numba import jit
+
+from sklearn.metrics import pairwise_distances
+
+@jit(nopython=True)
+def get_norm_stress(X,d):
+    norm, stress, n = np.linalg.norm, 0, len(X)
+
+    for i in range(n):
+        for j in range(n):
+            stress += pow(d[i][j] - norm(X[i]-X[j]),2)
+    return stress / np.sum(np.square(d))
+
+def get_neighborhood(X,d,rg = 2):
+    """
+    How well do the local neighborhoods represent the theoretical neighborhoods?
+    Closer to 1 is better.
+    Measure of percision: ratio of true positives to true positives+false positives
+    """
+    norm = np.linalg.norm
+    def get_k_embedded(X,k_t):
+        dist_mat = pairwise_distances(X)
+        return [np.argsort(dist_mat[i])[1:len(k_t[i])+1] for i in range(len(dist_mat))]
+
+    k_theory = [np.where((d[i] <= rg) & (d[i] > 0))[0] for i in range(len(d))]
+
+    k_embedded = get_k_embedded(X,k_theory)
+
+
+    NP = 0
+    for i in range(len(X)):
+        intersect = np.intersect1d(k_theory[i],k_embedded[i]).size
+        jaccard = intersect / (2*k_theory[i].size - intersect)
+
+        NP += 1-jaccard
+
+    return NP / len(X)
+
 
 
 
