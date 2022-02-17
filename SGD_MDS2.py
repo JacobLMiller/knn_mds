@@ -16,7 +16,7 @@ norm = lambda x: np.linalg.norm(x,ord=2)
 def satisfy(v,u,di,we,step,t=1,count=0):
 
 
-    if we >= 1 or count < 1:
+    if di <= 1:
         wc = step / pow(di,2)
 
         pq = v-u #Vector between points
@@ -120,21 +120,22 @@ def debug_solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False,t=1)
 
 
     for count in range(num_iter):
-        t = 1/(count+10) if count < 20 else 0
-        for _ in range(40):
+        t = 1 #/(count+10) if count < 20 else 0
+        for _ in range(20):
             max_change = 0
             for i,j in indices:
+                we = w[i][j] if w[i][j] == 1 else w[j][i]
                 before = np.linalg.norm(X[i]-X[j])
-                X[i],X[j] = satisfy(X[i],X[j],d[i][j],w[i][j],step,t=t,count=count)
+                X[i],X[j] = satisfy(X[i],X[j],d[i][j],we,step,t=t,count=count)
                 after = np.linalg.norm(X[i]-X[j])
                 max_change = max(max_change, abs(after-before))
             if max_change < 1e-5:
                 break
 
         step = schedule[min(count,len(schedule)-1)]
-        step = 0.1
+        step = 0.1 if step > 0.1 else step
         shuffle(indices)
-        print(get_stress(X,d))
+
 
         yield X.copy()
 

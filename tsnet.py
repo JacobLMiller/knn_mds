@@ -69,7 +69,7 @@ if __name__ == '__main__':
     print('Done.')
 
     # The actual optimization is done in the thesne module.
-    Y = thesne.tsnet(
+    Y,hist = thesne.tsnet(
         X, output_dims=2, random_state=1, perplexity=args.perplexity, n_epochs=n,
         Y=Y_init,
         initial_lr=args.learning_rate, final_lr=args.learning_rate, lr_switch=n // 2,
@@ -95,15 +95,15 @@ if __name__ == '__main__':
     # Show layout on the screen
     gt.graph_draw(g, pos=pos)
     X = distance_matrix.get_distance_matrix(g, 'spdm', verbose=False,normalize=False)
-    from tsnet_repeat import get_neighborhood
+    from metrics import get_neighborhood
     print(get_neighborhood(Y,X))
-    # for i in range(len(hist)):
-    #     print(get_neighborhood(hist[i],X))
-    #     pos = g.new_vp('vector<float>')
-    #     pos.set_2d_array(layout_io.normalize_layout(hist[i]).T)
-    #
-    #     #gt.graph_draw(H,pos=pos,output='figures/overlays/test_k' + str(i) + '.png')
-    #     gt.graph_draw(g,pos=pos,output='drawings/tsnet/iter' + str(i) + '.png')
+    for i in range(len(hist)):
+        print(get_neighborhood(hist[i],X))
+        pos = g.new_vp('vector<float>')
+        pos.set_2d_array(layout_io.normalize_layout(hist[i]).T)
+
+        #gt.graph_draw(H,pos=pos,output='figures/overlays/test_k' + str(i) + '.png')
+        gt.graph_draw(g,pos=pos,output='drawings/tsnet/iter' + str(i) + '.png')
 
     if args.output is not None:
         ##Jacob addition

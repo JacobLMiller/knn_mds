@@ -322,7 +322,7 @@ def find_Y(X_shared, Y_shared, sigma_shared, N, output_dims, n_epochs,
         # Do a gradient descent step
         update_Y()
 
-        #jacob_hist.append(Y_shared.get_value())
+        jacob_hist.append(Y_shared.get_value())
 
 
         c = get_cost()
@@ -395,4 +395,4 @@ def tsnet(X, perplexity=30, Y=None, output_dims=2, n_epochs=1000,
     )
 
     # Return the vertex coordinates.
-    return Y
+    return Y,hist

@@ -24,24 +24,24 @@ from sklearn.metrics import pairwise_distances
 #G = gt.load_graph("graphs/dwt_419.dot")
 G = gt.lattice([10,10])
 H = gt.lattice([5,20])
-G = gt.graph_union(G,H)
-G.add_edge_list([(52,103)])
-G = gt.load_graph('graphs/mesh3e1.dot')
-# G = gt.load_graph('graphs/btree8.dot')
+#G = gt.graph_union(G,H)
+#G.add_edge_list([(52,123)])
+#G = gt.load_graph('graphs/oscil.dot')
+G = gt.load_graph('graphs/dwt_72.dot')
 d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
 d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True,verbose=False)
 
 def get_w(k=5,a=5):
     A = gt.adjacency(G).toarray()
     mp = np.linalg.matrix_power
-    #A = sum([mp(A,i) for i in range(1,a)])
-    A = np.linalg.matrix_power(A,a)
+    A = sum([mp(A,i) for i in range(1,a)])
+    #A = np.linalg.matrix_power(A,a)
 
     A += np.random.normal(scale=0.01,size=A.shape)
     #A = 1-d_norm
 
     #k = 10
-    k_nearest = [np.argpartition(A[i],-k)[-k:] for i in range(len(A))]
+    k_nearest = [np.argpartition(A[i],-(k+1))[-(k+1):] for i in range(len(A))]
 
     n = G.num_vertices()
     N = 0
@@ -50,7 +50,7 @@ def get_w(k=5,a=5):
         for j in k_nearest[i]:
             if i != j:
                 w[i][j] = 1
-                w[j][i] = 1
+                #w[j][i] = 1
 
 
     return w
@@ -76,11 +76,13 @@ print(G.num_vertices())
 
 
 
+chosen = 50
+
 k = 8
 a = int(np.max(d))
 
 print(np.max(d))
-for a in [15]:
+for a in [5]:
     w = get_w(k=8,a=a)
     #w = gt.adjacency(G).toarray()
 
@@ -90,7 +92,7 @@ for a in [15]:
     t = np.count_nonzero(w)/w.size
     t = 0.1
     Y = SGD_MDS2(d,weighted=True,w=w)
-    Xs = Y.solve(num_iter=400,t=t,debug=True)
+    Xs = Y.solve(num_iter=60,t=t,debug=True)
     Zx = Xs[-1]
 
     X = layout_io.normalize_layout(Zx)
@@ -98,10 +100,23 @@ for a in [15]:
     print("NP: ", get_neighborhood(X,d,2))
 
 
+    vertex_color = G.new_vp('vector<double>')
+    G.vertex_properties['vertex_color']=vertex_color
+
+    #Color your edges
+    for v in G.vertices():
+        if int(v) == chosen:
+            vertex_color[v] = (0.0, 255.0, 0.0, 1)
+        elif d[chosen][int(v)] == 1:
+            vertex_color[v] = (0.0,0.0,255.0,1)
+        else:
+            vertex_color[v] = (160.0, 0.0, 0.0, 1)
+
+
     pos = G.new_vp('vector<float>')
     pos.set_2d_array(Zx.T)
     #
-    gt.graph_draw(G,pos=pos)
+    gt.graph_draw(G,pos=pos,vertex_fill_color=vertex_color)
 
 
     for count in range(len(Xs)):
@@ -113,4 +128,4 @@ for a in [15]:
             pos = G.new_vp('vector<float>')
             pos.set_2d_array(X.T)
             #
-            gt.graph_draw(G,pos=pos,output='drawings/t_mesh_k_' + str(k) + '_a' + str(a) + '_' +str(count) + '.png')
+            gt.graph_draw(G,pos=pos,vertex_fill_color=vertex_color,output='drawings/t_mesh_k_' + str(k) + '_a' + str(a) + '_' +str(count) + '.png')
