@@ -82,7 +82,7 @@ k = 8
 a = int(np.max(d))
 
 print(np.max(d))
-for a in [5]:
+for a in [1,2,3,4,5,6,7,8,9,10]:
     w = get_w(k=8,a=a)
     #w = gt.adjacency(G).toarray()
 

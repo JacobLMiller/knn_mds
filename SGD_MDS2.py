@@ -16,7 +16,7 @@ norm = lambda x: np.linalg.norm(x,ord=2)
 def satisfy(v,u,di,we,step,t=1,count=0):
 
 
-    if di <= 1:
+    if we >= 1:
         wc = step / pow(di,2)
 
         pq = v-u #Vector between points
