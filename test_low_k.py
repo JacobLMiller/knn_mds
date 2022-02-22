@@ -29,14 +29,15 @@ def get_w(G,k=5):
 
     return w
 
-def calc_LG(d,d_norm,G,k=8):
-    X = SGD_MDS2(d,weighted=True,w=get_w(G,k=k)).solve(40,debug=True)
+def calc_LG(d,d_norm,G,name,k=8):
+    X = SGD_MDS2(d,weighted=True,w=get_w(G,k=k)).solve(60,debug=True)
     X = layout_io.normalize_layout(X[-1])
     return get_neighborhood(X,d),get_norm_stress(X,d_norm)
 
-def calc_high(d,d_norm,G,k=8):
+def calc_high(d,d_norm,name,G,k=8):
     X = SGD_MDS(d).solve()
     X = layout_io.normalize_layout(X)
+
     return get_neighborhood(X,d),get_norm_stress(X,d_norm)
 
 

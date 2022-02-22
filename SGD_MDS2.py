@@ -120,7 +120,7 @@ def debug_solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False,t=1)
 
 
     for count in range(num_iter):
-        t = 1 #/(count+10) if count < 20 else 0
+        t = 1/(count+10) if count < 20 else 0
         for _ in range(20):
             max_change = 0
             for i,j in indices:
@@ -133,7 +133,7 @@ def debug_solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False,t=1)
                 break
 
         step = schedule[min(count,len(schedule)-1)]
-        step = 0.1 if step > 0.1 else step
+        #step = 0.1 if step > 0.1 else step
         shuffle(indices)
 
 
@@ -174,7 +174,7 @@ class SGD_MDS2:
     def get_sched(self,num_iter):
         lamb = np.log(self.eta_min/self.eta_max)/(num_iter-1)
         sched = lambda count: self.eta_max*np.exp(lamb*count)
-        sched = lambda count: 1/np.sqrt(count+1)
+        #sched = lambda count: 1/np.sqrt(count+1)
         return np.array([sched(count) for count in range(num_iter)])
 
     def solve(self,num_iter=15,debug=False,t=1):
