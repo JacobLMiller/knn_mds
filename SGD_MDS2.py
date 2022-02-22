@@ -118,9 +118,12 @@ def debug_solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False,t=1)
 
     yield X.copy()
 
+    diam = np.max(d)
+    indiam = 1/diam
 
     for count in range(num_iter):
-        t = 1/(count+10) if count < 20 else 0
+        t = (diam/(count*diam + diam))
+        print(t)
         for _ in range(20):
             max_change = 0
             for i,j in indices:

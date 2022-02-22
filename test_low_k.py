@@ -11,15 +11,20 @@ from sklearn.metrics import pairwise_distances
 
 from metrics import get_norm_stress,get_neighborhood
 
-def get_w(G,k=5):
+def get_w(G,k=5,a=5):
     A = gt.adjacency(G).toarray()
-    A = np.linalg.matrix_power(A,15)
+    mp = np.linalg.matrix_power
+    A = sum([mp(A,i) for i in range(1,a+1)])
+    #A = np.linalg.matrix_power(A,a)
+
     A += np.random.normal(scale=0.01,size=A.shape)
+    #A = 1-d_norm
 
     #k = 10
-    k_nearest = [np.argpartition(A[i],-k)[-k:] for i in range(len(A))]
+    k_nearest = [np.argpartition(A[i],-(k+1))[-(k+1):] for i in range(len(A))]
 
     n = G.num_vertices()
+    N = 0
     w = np.asarray([[ 0 if i != j else 0 for i in range(len(A))] for j in range(len(A))])
     for i in range(len(A)):
         for j in k_nearest[i]:
@@ -27,14 +32,15 @@ def get_w(G,k=5):
                 w[i][j] = 1
                 w[j][i] = 1
 
+
     return w
 
-def calc_LG(d,d_norm,G,name,k=8):
-    X = SGD_MDS2(d,weighted=True,w=get_w(G,k=k)).solve(60,debug=True)
+def calc_LG(d,d_norm,G,k=8):
+    X = SGD_MDS2(d,weighted=True,w=get_w(G,k=k,a=5)).solve(15,debug=True)
     X = layout_io.normalize_layout(X[-1])
     return get_neighborhood(X,d),get_norm_stress(X,d_norm)
 
-def calc_high(d,d_norm,name,G,k=8):
+def calc_high(d,d_norm,G,k=8):
     X = SGD_MDS(d).solve()
     X = layout_io.normalize_layout(X)
 
@@ -82,10 +88,10 @@ def main(n=5):
             scores[graph]['LG_high']['stress'][i] = stress
 
 
-        with open('data/test_low2.pkl','wb') as myfile:
+        with open('data/test_low3.pkl','wb') as myfile:
             pickle.dump(scores,myfile)
         myfile.close()
 
 
 if __name__ == "__main__":
-    main()
+    main(n=1)
