@@ -11,7 +11,7 @@ import graph_tool.all as gt
 from metrics import get_neighborhood, get_norm_stress
 from sklearn.metrics import pairwise_distances
 
-graph = "grid17"
+graph = "rajat11"
 
 G = gt.load_graph("graphs/{}.dot".format(graph))
 
@@ -47,7 +47,7 @@ d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
 
 
 
-Y = SGD_MDS2(d,weighted=True,w=get_w(k=18,a=3))
+Y = SGD_MDS2(d,weighted=True,w=get_w(k=2,a=3))
 Xs = Y.solve(20,debug=True)
 X = layout_io.normalize_layout(Xs[-1])
 

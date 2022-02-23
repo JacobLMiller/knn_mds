@@ -95,8 +95,8 @@ def opt_k(a=5):
         Y = SGD_MDS2(d,weighted=True,w=get_w(k=k,a=a))
         Xs = Y.solve(20,debug=True)
         X = layout_io.normalize_layout(Xs[-1])
-        best_k[a] = get_neighborhood(X,d)
-        stress[a] = get_norm_stress(X,d_norm)
+        best_k[k] = get_neighborhood(X,d)
+        stress[k] = get_norm_stress(X,d_norm)
 
     min_key = min(best_k, key = lambda k: best_k[k])
     print("The best k value I found was {} with an NP of {}".format(min_key,best_k[min_key]))
