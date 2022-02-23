@@ -29,13 +29,7 @@ def display_stats(graph):
     print()
 
 
-graph1 = 'rajat11'
-graph2 = 'price_1000'
-
-
-
-display_stats(graph1)
-display_stats(graph2)
-display_stats('grid17')
-display_stats('dwt_419')
-display_stats('block_2000')
+display_stats('10square')
+display_stats('12square')
+display_stats('14square')
+display_stats('16square')

@@ -11,7 +11,7 @@ import graph_tool.all as gt
 from metrics import get_neighborhood, get_norm_stress
 from sklearn.metrics import pairwise_distances
 
-graph = "rajat11"
+graph = "dwt_419"
 
 G = gt.load_graph("graphs/{}.dot".format(graph))
 
@@ -45,15 +45,15 @@ def get_w(k=5,a=5):
 d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
 d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
 
-# Y = SGD_MDS(d)
-# Xs = Y.solve(20,debug=True)
-# X = layout_io.normalize_layout(Xs)
+Y = SGD_MDS(d)
+Xs = Y.solve(20,debug=True)
+X = layout_io.normalize_layout(Xs)
+
+print("Full SGD: Stress: {}, NP: {}".format(get_norm_stress(X,d_norm),get_neighborhood(X,d)))
+pos = G.new_vp('vector<float>')
+pos.set_2d_array(X.T)
 #
-# print("Full SGD: Stress: {}, NP: {}".format(get_norm_stress(X,d_norm),get_neighborhood(X,d)))
-# pos = G.new_vp('vector<float>')
-# pos.set_2d_array(X.T)
-# #
-# gt.graph_draw(G,pos=pos)
+gt.graph_draw(G,pos=pos)
 #
 #
 # Y = SGD_MDS2(d,weighted=True,w=get_w(k=15,a=5))
@@ -65,7 +65,7 @@ d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
 # pos.set_2d_array(X.T)
 # #
 # gt.graph_draw(G,pos=pos)
-def opt_a(k=8):
+def opt_a(d,d_norm,k=8):
     best_k = {}
     stress = {}
     for a in range(1,15):
@@ -81,16 +81,17 @@ def opt_a(k=8):
     keys = list(best_k.keys())
     print(keys.sort())
     x = [best_k[i] for i in keys]
+    return min_key
 
-    plt.plot( keys, x, label="NP")
-    plt.plot( keys, [stress[i] for i in keys], label="stress")
-    plt.legend()
-    plt.show()
+    # plt.plot( keys, x, label="NP")
+    # plt.plot( keys, [stress[i] for i in keys], label="stress")
+    # plt.legend()
+    # plt.show()
 
-def opt_k(a=5):
+def opt_k(d,d_norm,a=5):
     best_k = {}
     stress = {}
-    for k in range(2,G.num_vertices(),8):
+    for k in range(2,len(d),8):
         print(k)
         Y = SGD_MDS2(d,weighted=True,w=get_w(k=k,a=a))
         Xs = Y.solve(20,debug=True)
@@ -104,9 +105,20 @@ def opt_k(a=5):
     print(keys.sort())
     x = [best_k[i] for i in keys]
 
-    plt.plot( keys, x, label="NP")
-    plt.plot( keys, [stress[i] for i in keys], label="stress")
-    plt.legend()
-    plt.show()
+    return min_key
+    # plt.plot( keys, x, label="NP")
+    # plt.plot( keys, [stress[i] for i in keys], label="stress")
+    # plt.legend()
+    # plt.show()
 
-opt_k(a=3)
+
+def find_opts(G_list):
+    for G in G_list:
+        d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
+        d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
+        a = opt_a(d,d_norm,k=8)
+        k = opt_k(d,d_norm,a=a)
+        print("Optimal k is {} and optimal a is {}".format(k,a))
+        print()
+
+find_opts([gt.lattice([i,i]) for i in range(5,15)])

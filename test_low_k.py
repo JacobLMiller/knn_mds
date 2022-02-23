@@ -36,6 +36,7 @@ def get_w(G,k=5,a=5):
     return w
 
 def calc_LG(d,d_norm,G,k=8):
+
     X = SGD_MDS2(d,weighted=True,w=get_w(G,k=k,a=5)).solve(15,debug=True)
     X = layout_io.normalize_layout(X[-1])
 
@@ -77,13 +78,16 @@ def main(n=5):
         d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
         d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
 
+        CC,_ = gt.global_clustering(G)
+        a = 2 if CC < 0.1 else 3 if CC < 0.4 else 4 if CC < 0.6 else 5
+
         print("Graph: " + graph)
         print("-----------------------------------------------------------")
 
         for i in range(n):
             print("Iteration number ", i)
 
-            NP,stress = calc_LG(d,d_norm,G,k=8)
+            NP,stress = calc_LG(d,d_norm,G,k=4,a=a)
             scores[graph]['LG_low']['NP'][i] = NP
             scores[graph]['LG_low']['stress'][i] = stress
             print("NP: ", NP)
@@ -93,7 +97,7 @@ def main(n=5):
             scores[graph]['LG_high']['stress'][i] = stress
 
 
-        with open('data/test_low3.pkl','wb') as myfile:
+        with open('data/test_low5.pkl','wb') as myfile:
             pickle.dump(scores,myfile)
         myfile.close()
 

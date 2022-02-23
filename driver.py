@@ -21,7 +21,7 @@ from sklearn.metrics import pairwise_distances
 
 #G = gt.generate_sbm(list(bm), probs, out_degs=None, directed=False, micro_ers=False, micro_degs=False)
 
-graph = 'oscil'
+graph = 'dwt_419'
 
 
 #G = gt.load_graph("graphs/dwt_419.dot")
@@ -109,9 +109,10 @@ a = int(np.max(d))
 
 min_NP = {}
 print(np.max(d))
-power = int(np.max(d)/2)
-for a in range(7,8):
-    w = get_w(k=k,a=a)
+
+stress,NP = [],[]
+for k in range(8,G.num_vertices(), 15):
+    w = get_w(k=k,a=5)
     #w = gt.adjacency(G).toarray()
 
     count = 0
@@ -120,13 +121,15 @@ for a in range(7,8):
     t = np.count_nonzero(w)/w.size
     t = 0.1
     Y = SGD_MDS2(d,weighted=True,w=w)
-    Xs = Y.solve(num_iter=15,t=t,debug=True)
+    Xs = Y.solve(num_iter=20,t=t,debug=True)
     Zx = Xs[-1]
 
     X = layout_io.normalize_layout(Zx)
-    print("Stress: ", get_norm_stress(X,d_norm))
-    print("NP: ", get_neighborhood(X,d,2))
-
+    stress_temp, NP_temp = get_norm_stress(X,d_norm), get_neighborhood(X,d,2)
+    print("Stress: ", stress_temp)
+    print("NP: ", NP_temp)
+    stress.append(stress_temp)
+    NP.append(NP_temp)
 
     # vertex_color = G.new_vp('vector<double>')
     # G.vertex_properties['vertex_color']=vertex_color
@@ -140,11 +143,11 @@ for a in range(7,8):
     #     else:
     #         vertex_color[v] = (160.0, 0.0, 0.0, 1)
 
-
-    pos = G.new_vp('vector<float>')
-    pos.set_2d_array(Zx.T)
     #
-    gt.graph_draw(G,pos=pos)#,vertex_fill_color=vertex_color)
+    # pos = G.new_vp('vector<float>')
+    # pos.set_2d_array(Zx.T)
+    # #
+    # gt.graph_draw(G,pos=pos)#,vertex_fill_color=vertex_color)
 
     # stress = [get_norm_stress(layout_io.normalize_layout(Y),d_norm) for Y in Xs]
     # NP = [get_neighborhood(layout_io.normalize_layout(Y),d) for Y in Xs]
@@ -154,7 +157,12 @@ for a in range(7,8):
     # plt.legend()
     # plt.show()
 
-    min_NP[a] = get_neighborhood(X,d,2)
+plt.suptitle(graph)
+plt.plot([x for x in range(8,G.num_vertices(), 15)],stress,label='Stress')
+plt.plot([x for x in range(8,G.num_vertices(), 15)],NP,label='NP')
+plt.legend()
+plt.show()
+
 
 
     # for count in range(len(Xs)):
@@ -167,6 +175,6 @@ for a in range(7,8):
     #         pos.set_2d_array(X.T)
     #         #
     #         gt.graph_draw(G,pos=pos,output='drawings/t_mesh_k_' + str(k) + '_a' + str(a) + '_' +str(count) + '.png')
-
-min_key = min(min_NP, key = lambda k: min_NP[k])
-print("The best a value I found was {} with an NP score of {}.".format(min_key,min_NP[min_key]))
+#
+# min_key = min(min_NP, key = lambda k: min_NP[k])
+# print("The best a value I found was {} with an NP score of {}.".format(min_key,min_NP[min_key]))
