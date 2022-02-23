@@ -21,7 +21,7 @@ from sklearn.metrics import pairwise_distances
 
 #G = gt.generate_sbm(list(bm), probs, out_degs=None, directed=False, micro_ers=False, micro_degs=False)
 
-graph = 'mesh3e1'
+graph = 'oscil'
 
 
 #G = gt.load_graph("graphs/dwt_419.dot")
@@ -35,15 +35,26 @@ d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
 d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True,verbose=False)
 
 
-H = gt.load_graph('graphs/rajat11')
+H = gt.load_graph('graphs/dwt_419.dot')
 dh = distance_matrix.get_distance_matrix(H,'spdm',normalize=False)
 
 print("mesh3e1")
 print("num_vertices", G.num_vertices())
+print("num_edges",G.num_edges())
 print("diameter", np.max(d))
 print("clustering coefficient", gt.global_clustering(G))
+print("average degree", gt.vertex_average(G,'total'))
+print("nodes-to-edges", G.num_edges()/G.num_vertices())
+print()
+print("rajat11")
+print("num_vertices", H.num_vertices())
+print("num_edges",H.num_edges())
+print("diameter", np.max(dh))
+print("clustering coefficient", gt.global_clustering(H))
+print("average degree", gt.vertex_average(H,'total'))
+print("nodes-to-edges", H.num_edges()/H.num_vertices())
 
-
+import random
 def get_w(k=5,a=5):
     A = gt.adjacency(G).toarray()
     mp = np.linalg.matrix_power
@@ -63,7 +74,8 @@ def get_w(k=5,a=5):
         for j in k_nearest[i]:
             if i != j:
                 w[i][j] = 1
-                #w[j][i] = 1
+                w[j][i] = 1
+        #w[i][random.randint(0,len(w)-1)] = 1
 
 
     return w
@@ -95,10 +107,10 @@ k = 8
 a = int(np.max(d))
 
 
-
+min_NP = {}
 print(np.max(d))
 power = int(np.max(d)/2)
-for a in [5]:
+for a in range(7,8):
     w = get_w(k=k,a=a)
     #w = gt.adjacency(G).toarray()
 
@@ -134,22 +146,27 @@ for a in [5]:
     #
     gt.graph_draw(G,pos=pos)#,vertex_fill_color=vertex_color)
 
-    stress = [get_norm_stress(layout_io.normalize_layout(Y),d_norm) for Y in Xs]
-    NP = [get_neighborhood(layout_io.normalize_layout(Y),d) for Y in Xs]
-    plt.suptitle(graph)
-    plt.plot(np.arange(len(stress)),stress,label='Stress')
-    plt.plot(np.arange(len(stress)),NP,label='NP')
-    plt.legend()
-    plt.show()
+    # stress = [get_norm_stress(layout_io.normalize_layout(Y),d_norm) for Y in Xs]
+    # NP = [get_neighborhood(layout_io.normalize_layout(Y),d) for Y in Xs]
+    # plt.suptitle(graph)
+    # plt.plot(np.arange(len(stress)),stress,label='Stress')
+    # plt.plot(np.arange(len(stress)),NP,label='NP')
+    # plt.legend()
+    # plt.show()
+
+    min_NP[a] = get_neighborhood(X,d,2)
 
 
-    for count in range(len(Xs)):
-        if count % 1 == 0:
-            layout = Xs[count]
-            X = layout_io.normalize_layout(layout)
-            print(get_neighborhood(X,d))
+    # for count in range(len(Xs)):
+    #     if count % 1 == 0:
+    #         layout = Xs[count]
+    #         X = layout_io.normalize_layout(layout)
+    #         print(get_neighborhood(X,d))
+    #
+    #         pos = G.new_vp('vector<float>')
+    #         pos.set_2d_array(X.T)
+    #         #
+    #         gt.graph_draw(G,pos=pos,output='drawings/t_mesh_k_' + str(k) + '_a' + str(a) + '_' +str(count) + '.png')
 
-            pos = G.new_vp('vector<float>')
-            pos.set_2d_array(X.T)
-            #
-            gt.graph_draw(G,pos=pos,output='drawings/t_mesh_k_' + str(k) + '_a' + str(a) + '_' +str(count) + '.png')
+min_key = min(min_NP, key = lambda k: min_NP[k])
+print("The best a value I found was {} with an NP score of {}.".format(min_key,min_NP[min_key]))

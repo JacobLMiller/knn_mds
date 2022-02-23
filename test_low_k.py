@@ -38,6 +38,10 @@ def get_w(G,k=5,a=5):
 def calc_LG(d,d_norm,G,k=8):
     X = SGD_MDS2(d,weighted=True,w=get_w(G,k=k,a=5)).solve(15,debug=True)
     X = layout_io.normalize_layout(X[-1])
+
+    pos = G.new_vp('vector<float>')
+    pos.set_2d_array(X.T)
+    gt.graph_draw(G,pos=pos)
     return get_neighborhood(X,d),get_norm_stress(X,d_norm)
 
 def calc_high(d,d_norm,G,k=8):
@@ -82,6 +86,7 @@ def main(n=5):
             NP,stress = calc_LG(d,d_norm,G,k=8)
             scores[graph]['LG_low']['NP'][i] = NP
             scores[graph]['LG_low']['stress'][i] = stress
+            print("NP: ", NP)
 
             NP,stress = calc_high(d,d_norm,G)
             scores[graph]['LG_high']['NP'][i] = NP

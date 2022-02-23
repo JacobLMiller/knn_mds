@@ -122,8 +122,7 @@ def debug_solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False,t=1)
     indiam = 1/diam
 
     for count in range(num_iter):
-        t = (diam/(count*diam + diam))
-        print(t)
+        t = (1)/(count + 1)
         for _ in range(20):
             max_change = 0
             for i,j in indices:
