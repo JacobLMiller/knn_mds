@@ -31,6 +31,7 @@ import math
 import numpy as np
 import theano
 import theano.tensor as T
+from theano import pp
 from sklearn.utils import check_random_state
 from scipy.spatial.distance import pdist
 
@@ -120,6 +121,8 @@ def cost_var(X, Y, sigma, l_kl, l_c, l_r, r_eps):
 
     return cost
 
+def go_print(thing):
+    print(thing)
 
 # Binary search on sigma for a given perplexity
 def find_sigma(X_shared, sigma_shared, N, perplexity, sigma_iters, verbose=0):
@@ -326,6 +329,7 @@ def find_Y(X_shared, Y_shared, sigma_shared, N, output_dims, n_epochs,
 
 
         c = get_cost()
+        #print(c)
         if np.isnan(float(c)):
             raise NaNException('Encountered NaN for cost.')
 
@@ -333,7 +337,7 @@ def find_Y(X_shared, Y_shared, sigma_shared, N, output_dims, n_epochs,
             if autostop and epoch >= window_size:
                 dlast_period = stepsize_over_time[epoch - window_size:epoch]
                 max_stepsize = dlast_period.max()
-                print('Epoch: {0}. Cost: {1:.6f}. Max step size of last {2}: {3:.2e}'.format(epoch + 1, float(c), window_size, max_stepsize), end='\r')
+                #print('Epoch: {0}. Cost: {1:.6f}. Max step size of last {2}: {3:.2e}'.format(epoch + 1, float(c), window_size, max_stepsize), end='\r')
             else:
                 print('Epoch: {0}. Cost: {1:.6f}.'.format(epoch + 1, float(c)), end='\r')
 

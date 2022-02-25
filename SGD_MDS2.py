@@ -15,6 +15,8 @@ norm = lambda x: np.linalg.norm(x,ord=2)
 @jit(nopython=True)
 def satisfy(v,u,di,we,step,t=1,count=0):
 
+    m = np.zeros(v.shape)
+
 
     if we >= 1:
         wc = step / pow(di,2)
@@ -34,20 +36,20 @@ def satisfy(v,u,di,we,step,t=1,count=0):
         if wc > 1:
             wc = 1
         r = wc*r
-        m = (pq*r) /mag
+        m += (pq*r) /mag
         #m *= t
 
-        return v-m, u+m
-    else:
-        wc = step
-        pq = v-u
-        mag = np.linalg.norm(pq)
-        if wc > 0.1:
-            wc = 0.1
-        r = pq/(mag **2)
-        r *= wc
-        m = -(t)*r
-        return v-m,u+m
+        #return v-m, u+m
+    #else:
+    wc = step
+    pq = v-u
+    mag = np.linalg.norm(pq)
+    if wc > 0.1:
+        wc = 0.1
+    r = pq/(mag **2)
+    r *= wc
+    m += -(t)*r
+    return v-m,u+m
 
 @jit(nopython=True)
 def old_satisfy(v,u,di,we,step,t=1,count=0,max_change=0,mom=0):
@@ -108,6 +110,20 @@ def solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False,t=1):
 
     return X
 
+
+
+@jit(nopython=True)
+def calc_cost(X,d,w):
+    cost, norm, n = 0, np.linalg.norm, len(X)
+    for i in range(n):
+        for j in range(i):
+            pq = X[i]-X[j]
+            mag = norm(pq)
+            near = pow(mag-d[i][j],2) if d[i][j] <= 1 else 0
+            far = -np.log(mag)
+            cost += near+0.6*far
+    return cost
+
 @jit(nopython=True)
 def debug_solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False,t=1):
     step = 1
@@ -123,6 +139,7 @@ def debug_solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False,t=1)
 
     for count in range(num_iter):
         t = (1)/(count + 1)
+        t = 0.6 if count < 15 else 0
         for _ in range(20):
             max_change = 0
             for i,j in indices:
@@ -137,6 +154,8 @@ def debug_solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False,t=1)
         step = schedule[min(count,len(schedule)-1)]
         #step = 0.1 if step > 0.1 else step
         shuffle(indices)
+        cost = calc_cost(X,d,w)
+        print(cost)
 
 
         yield X.copy()

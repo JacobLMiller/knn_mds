@@ -97,13 +97,13 @@ if __name__ == '__main__':
     X = distance_matrix.get_distance_matrix(g, 'spdm', verbose=False,normalize=False)
     from metrics import get_neighborhood
     print(get_neighborhood(Y,X))
-    for i in range(len(hist)):
-        print(get_neighborhood(hist[i],X))
-        pos = g.new_vp('vector<float>')
-        pos.set_2d_array(layout_io.normalize_layout(hist[i]).T)
-
-        #gt.graph_draw(H,pos=pos,output='figures/overlays/test_k' + str(i) + '.png')
-        gt.graph_draw(g,pos=pos,output='drawings/tsnet/iter' + str(i) + '.png')
+    # for i in range(len(hist)):
+    #     print(get_neighborhood(hist[i],X))
+    #     pos = g.new_vp('vector<float>')
+    #     pos.set_2d_array(layout_io.normalize_layout(hist[i]).T)
+    #
+    #     #gt.graph_draw(H,pos=pos,output='figures/overlays/test_k' + str(i) + '.png')
+    #     gt.graph_draw(g,pos=pos,output='drawings/tsnet/iter' + str(i) + '.png')
 
     if args.output is not None:
         ##Jacob addition

@@ -81,7 +81,7 @@ def k_curve(graph):
     G = gt.load_graph("graphs/{}.dot".format(graph))
     d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
     d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
-    if G.num_vertices() > 1900:
+    if G.num_vertices() > 2001:
         return
 
     CC,_ = gt.global_clustering(G)
@@ -114,12 +114,19 @@ def layout_directory():
     for graph in graph_paths:
         k_curve(graph.split('.')[0])
 
-def drive(graph):
+def draw_hist(G,Xs):
+    for count in range(len(Xs)):
+        draw(G,Xs[count],output="drawings/update/test_{}.png".format(count))
+
+def drive(graph,hist=False):
     G = gt.load_graph("graphs/{}.dot".format(graph))
     d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
     d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
 
     Xs = layout(G,d,d_norm,debug=True, k=2, a=5)
-    draw(G,Xs[-1])
+    if hist:
+        draw_hist(G,Xs)
+    else:
+        draw(G,Xs[-1])
 
-k_curve('block_2000')
+drive('10square',hist=True)
