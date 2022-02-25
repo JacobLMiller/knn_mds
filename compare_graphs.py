@@ -29,7 +29,7 @@ def display_stats(graph):
     print()
 
 
-display_stats('10square')
-display_stats('12square')
-display_stats('14square')
-display_stats('16square')
+display_stats('price_1000')
+display_stats('rajat11')
+display_stats('block_2000')
+display_stats('oscil')

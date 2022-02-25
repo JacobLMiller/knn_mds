@@ -12,6 +12,19 @@ def get_norm_stress(X,d):
             stress += pow(d[i][j] - norm(X[i]-X[j]),2)
     return stress / np.sum(np.square(d))
 
+def get_stress(X,d):
+    def stress(a=1):
+        sig,norm = 0, np.linalg.norm
+        for i in range(len(X)):
+            for j in range(i):
+                sig += pow(a*norm(X[i]-X[j]) - d[i][j],2) / pow(d[i][j],2)
+        return sig
+    
+    from scipy.optimize import minimize_scalar
+    min_a = minimize_scalar(stress)
+    print("a is ",min_a.x)
+    return stress(a=min_a.x)
+
 def get_neighborhood(X,d,rg = 2):
     """
     How well do the local neighborhoods represent the theoretical neighborhoods?

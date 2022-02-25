@@ -5,7 +5,11 @@ __pycache__/
 
 #Jacob additions
 figures/
-drawings/
+drawings/grids
+drawings/grids2
+drawings/test
+drawings/test3
+drawings/tsnet
 
 *.pkl
 

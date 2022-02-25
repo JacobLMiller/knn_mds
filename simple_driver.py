@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import graph_tool.all as gt
 
-from metrics import get_neighborhood, get_norm_stress
+from metrics import get_neighborhood, get_norm_stress, get_stress
 from sklearn.metrics import pairwise_distances
 
 def layout(G,d,d_norm,debug=False,k=8,a=5):
@@ -84,10 +84,11 @@ def k_curve(graph):
     if G.num_vertices() > 2001:
         return
 
+    diam = np.max(d)
     CC,_ = gt.global_clustering(G)
-    a = 2 if CC < 0.1 else 3 if CC < 0.4 else 4 if CC < 0.6 else 5
+    a = 2 if diam > 22 else 3 if diam > 12 else 4 if diam > 8 else 5
 
-    K = np.linspace(8,G.num_vertices()-1,12)
+    K = np.linspace(2,100,12)
     stress,NP = [], []
     for k in K:
 
@@ -129,4 +130,8 @@ def drive(graph,hist=False):
     else:
         draw(G,Xs[-1])
 
+<<<<<<< HEAD
 drive('10square',hist=True)
+=======
+k_curve('dwt_1005')
+>>>>>>> 570a0348f4e14016e1a91ad0a2199103c61d534b
