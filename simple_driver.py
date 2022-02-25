@@ -130,8 +130,5 @@ def drive(graph,hist=False):
     else:
         draw(G,Xs[-1])
 
-<<<<<<< HEAD
+
 drive('10square',hist=True)
-=======
-k_curve('dwt_1005')
->>>>>>> 570a0348f4e14016e1a91ad0a2199103c61d534b

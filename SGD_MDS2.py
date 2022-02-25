@@ -13,7 +13,9 @@ import random
 norm = lambda x: np.linalg.norm(x,ord=2)
 
 @jit(nopython=True)
-def satisfy(v,u,di,we,step,t=1,count=0):
+def satisfy2(v,u,di,we,step,t=1,count=0):
+
+    l_sum = 1+t
 
     m = np.zeros(v.shape)
 
@@ -36,7 +38,7 @@ def satisfy(v,u,di,we,step,t=1,count=0):
         if wc > 1:
             wc = 1
         r = wc*r
-        m += (pq*r) /mag
+        m += (1/l_sum) * ((pq*r) /mag)
         #m *= t
 
         #return v-m, u+m
@@ -48,8 +50,33 @@ def satisfy(v,u,di,we,step,t=1,count=0):
         wc = 0.1
     r = pq/(mag **2)
     r *= wc
-    m += -(t)*r
+    m += (t/l_sum)*(-r)
     return v-m,u+m
+
+@jit(nopython=True)
+def satisfy(v,u,di,we,step,N,t=1,c=1.2):
+
+    we = 1 if di == 1 else 0
+
+    l_sum = 1+t+c
+
+    m = np.zeros(v.shape)
+
+    wc = 1
+
+    pq = v-u
+    mag = np.linalg.norm(pq)
+
+    stress = (wc*pq*((mag-di)/2)) / mag
+    stress *= we
+
+    compression = 0 * (1 / (2 * N)) * (2*(v+u))
+
+    repulsion = -(1 / (2 * N**2)) * (pq/(mag **2))
+
+    m = (1/l_sum) * stress + (c/l_sum) * compression + (t/l_sum) * repulsion
+
+    return v-m, u+m
 
 @jit(nopython=True)
 def old_satisfy(v,u,di,we,step,t=1,count=0,max_change=0,mom=0):
@@ -130,6 +157,7 @@ def debug_solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False,t=1)
     shuffle = random.shuffle
     shuffle(indices)
     max_change = 0
+    n = len(X)
     #schedule = np.array([1/(np.sqrt(count+10)) for count in range(num_iter)])
 
     yield X.copy()
@@ -137,22 +165,23 @@ def debug_solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False,t=1)
     diam = np.max(d)
     indiam = 1/diam
 
-    for count in range(num_iter):
+    for count in range(100):
         t = (1)/(count + 1)
-        t = 0.6 if count < 15 else 0
+        t = 0.6 if count > 15 else 0
+        c = 1.2 if count < 15 else 0
         for _ in range(20):
             max_change = 0
             for i,j in indices:
                 we = w[i][j] if w[i][j] == 1 else w[j][i]
                 before = np.linalg.norm(X[i]-X[j])
-                X[i],X[j] = satisfy(X[i],X[j],d[i][j],we,step,t=t,count=count)
+                X[i],X[j] = satisfy(X[i],X[j],d[i][j],we,step,N=n,t=t,c=c)
                 after = np.linalg.norm(X[i]-X[j])
                 max_change = max(max_change, abs(after-before))
             if max_change < 1e-5:
                 break
 
         step = schedule[min(count,len(schedule)-1)]
-        #step = 0.1 if step > 0.1 else step
+        step = 0.1 if step > 0.1 else step
         shuffle(indices)
         cost = calc_cost(X,d,w)
         print(cost)

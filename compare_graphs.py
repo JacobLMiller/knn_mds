@@ -33,3 +33,9 @@ display_stats('price_1000')
 display_stats('rajat11')
 display_stats('block_2000')
 display_stats('oscil')
+
+
+a, b, c = 1, 0.1, 0.6
+l_sum = a+b+c
+
+print( a/l_sum + b/l_sum + c/l_sum)
