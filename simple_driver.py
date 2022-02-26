@@ -1,4 +1,4 @@
-from SGD_MDS2 import SGD_MDS2
+from SGD_MDS2 import SGD_MDS2, calc_cost
 from SGD_MDS import SGD_MDS
 
 import modules.distance_matrix as distance_matrix
@@ -11,33 +11,35 @@ import graph_tool.all as gt
 from metrics import get_neighborhood, get_norm_stress, get_stress
 from sklearn.metrics import pairwise_distances
 
-def layout(G,d,d_norm,debug=False,k=8,a=5):
-    def get_w(k=5,a=5):
-        A = gt.adjacency(G).toarray()
-        mp = np.linalg.matrix_power
-        A = sum([mp(A,i) for i in range(1,a+1)])
-        #A = np.linalg.matrix_power(A,a)
+def get_w(G,k=5,a=5):
+    A = gt.adjacency(G).toarray()
+    mp = np.linalg.matrix_power
+    A = sum([mp(A,i) for i in range(1,a+1)])
+    #A = np.linalg.matrix_power(A,a)
 
-        A += np.random.normal(scale=0.01,size=A.shape)
-        #A = 1-d_norm
+    A += np.random.normal(scale=0.01,size=A.shape)
+    #A = 1-d_norm
 
-        #k = 10
-        k_nearest = [np.argpartition(A[i],-(k+1))[-(k+1):] for i in range(len(A))]
+    #k = 10
+    k_nearest = [np.argpartition(A[i],-(k+1))[-(k+1):] for i in range(len(A))]
 
-        n = G.num_vertices()
-        N = 0
-        w = np.asarray([[ 0 if i != j else 0 for i in range(len(A))] for j in range(len(A))])
-        for i in range(len(A)):
-            for j in k_nearest[i]:
-                if i != j:
-                    w[i][j] = 1
-                    #w[j][i] = 1
-
-
-        return w
+    n = G.num_vertices()
+    N = 0
+    w = np.asarray([[ 0 if i != j else 0 for i in range(len(A))] for j in range(len(A))])
+    for i in range(len(A)):
+        for j in k_nearest[i]:
+            if i != j:
+                w[i][j] = 1
+                #w[j][i] = 1
 
 
-    Y = SGD_MDS2(d,weighted=True,w=get_w(k=k,a=a))
+    return w
+
+def layout(G,d,d_norm,w,debug=False):
+
+
+
+    Y = SGD_MDS2(d,weighted=True,w=w)
     Xs = Y.solve(20,debug=debug)
 
     if debug:
@@ -116,19 +118,27 @@ def layout_directory():
         k_curve(graph.split('.')[0])
 
 def draw_hist(G,Xs):
-    for count in range(len(Xs)):
+    for count in range(len(Xs)-1):
         draw(G,Xs[count],output="drawings/update/test_{}.png".format(count))
+
+
 
 def drive(graph,hist=False):
     G = gt.load_graph("graphs/{}.dot".format(graph))
     d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
     d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
 
-    Xs = layout(G,d,d_norm,debug=True, k=2, a=5)
+    w = get_w(G,k=2,a=5)
+
+    Xs = layout(G,d,d_norm,w,debug=True)
     if hist:
+        stress = [calc_cost(Xs[count], d, w, 1/(count+1)) for count in range(len(Xs))]
+        import matplotlib.pyplot as plt
+        plt.plot(np.arange(len(stress)),stress)
+        plt.show()
         draw_hist(G,Xs)
     else:
-        draw(G,Xs[-1])
+        draw(G,Xs[-2])
 
 
-drive('10square',hist=True)
+drive('test_graph',hist=True)

@@ -58,7 +58,7 @@ def satisfy(v,u,di,we,step,N,t=1,c=1.2):
 
     we = 1 if di == 1 else 0
 
-    l_sum = 1+t+c
+    l_sum = 1+t
 
     m = np.zeros(v.shape)
 
@@ -72,7 +72,7 @@ def satisfy(v,u,di,we,step,N,t=1,c=1.2):
 
     compression = 0 * (1 / (2 * N)) * (2*(v+u))
 
-    repulsion = -(1 / (2 * N**2)) * (pq/(mag **2))
+    repulsion = -(pq/(mag **2))
 
     m = (1/l_sum) * stress + (c/l_sum) * compression + (t/l_sum) * repulsion
 
@@ -140,15 +140,15 @@ def solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False,t=1):
 
 
 @jit(nopython=True)
-def calc_cost(X,d,w):
-    cost, norm, n = 0, np.linalg.norm, len(X)
+def calc_cost(X,d,w,t):
+    cost, norm, n, l_sum = 0, np.linalg.norm, len(X), 1+t
     for i in range(n):
         for j in range(i):
             pq = X[i]-X[j]
             mag = norm(pq)
-            near = pow(mag-d[i][j],2) if d[i][j] <= 1 else 0
-            far = -np.log(mag)
-            cost += near+0.6*far
+            near = pow(mag-d[i][j],2) if w[i][j] >= 1 else 0
+            far = -(1 / (2 * n**2))*np.log(mag)
+            cost += (1/l_sum) * near + t/l_sum*far
     return cost
 
 @jit(nopython=True)
@@ -158,6 +158,7 @@ def debug_solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False,t=1)
     shuffle(indices)
     max_change = 0
     n = len(X)
+    stress_hist = []
     #schedule = np.array([1/(np.sqrt(count+10)) for count in range(num_iter)])
 
     yield X.copy()
@@ -165,9 +166,9 @@ def debug_solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False,t=1)
     diam = np.max(d)
     indiam = 1/diam
 
-    for count in range(100):
+    for count in range(num_iter):
         t = (1)/(count + 1)
-        t = 0.6 if count > 15 else 0
+        #t = 0.6 if count > 15 else 0
         c = 1.2 if count < 15 else 0
         for _ in range(20):
             max_change = 0
@@ -181,10 +182,10 @@ def debug_solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False,t=1)
                 break
 
         step = schedule[min(count,len(schedule)-1)]
-        step = 0.1 if step > 0.1 else step
+
         shuffle(indices)
-        cost = calc_cost(X,d,w)
-        print(cost)
+        cost = calc_cost(X,d,w,t)
+        stress_hist.append(cost)
 
 
         yield X.copy()

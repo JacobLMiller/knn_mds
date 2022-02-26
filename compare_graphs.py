@@ -28,14 +28,12 @@ def display_stats(graph):
 
     print()
 
+import networkx as nx
 
-display_stats('price_1000')
-display_stats('rajat11')
-display_stats('block_2000')
-display_stats('oscil')
+H = nx.ring_of_cliques(20, 5)
+G = gt.Graph(directed=False)
+G.add_vertex(n=len(H.nodes()))
+for e in H.edges():
+    G.add_edge(e[0],e[1])
 
-
-a, b, c = 1, 0.1, 0.6
-l_sum = a+b+c
-
-print( a/l_sum + b/l_sum + c/l_sum)
+G.save('graphs/test_graph.dot')
