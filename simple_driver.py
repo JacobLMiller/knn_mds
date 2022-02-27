@@ -1,4 +1,4 @@
-from SGD_MDS2 import SGD_MDS2
+from SGD_MDS2 import SGD_MDS2, calc_cost
 from SGD_MDS import SGD_MDS
 
 import modules.distance_matrix as distance_matrix
@@ -26,7 +26,7 @@ def layout(G,d,d_norm,debug=False,k=8,a=5):
 
         n = G.num_vertices()
         N = 0
-        w = np.asarray([[ 0 if i != j else 0 for i in range(len(A))] for j in range(len(A))])
+        w = np.asarray([[ 1e-7 if i != j else 0 for i in range(len(A))] for j in range(len(A))])
         for i in range(len(A)):
             for j in k_nearest[i]:
                 if i != j:
@@ -36,14 +36,14 @@ def layout(G,d,d_norm,debug=False,k=8,a=5):
 
         return w
 
-
-    Y = SGD_MDS2(d,weighted=True,w=get_w(k=k,a=a))
-    Xs = Y.solve(20,debug=debug)
+    w = get_w(k=k,a=a)
+    Y = SGD_MDS2(d,weighted=True,w=w)
+    Xs = Y.solve(100,debug=debug)
 
     if debug:
-        Xs = [layout_io.normalize_layout(X) for X in Xs]
+         #Xs = [layout_io.normalize_layout(X) for X in Xs]
         print("Local SGD: Stress: {}, NP: {}".format(get_norm_stress(Xs[-1],d_norm),get_neighborhood(Xs[-1],d)))
-        return Xs
+        return Xs,w
     else:
         return Xs
 
@@ -81,14 +81,12 @@ def k_curve(graph):
     G = gt.load_graph("graphs/{}.dot".format(graph))
     d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
     d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
-    if G.num_vertices() > 2001:
-        return
 
     diam = np.max(d)
     CC,_ = gt.global_clustering(G)
-    a = 2 if diam > 22 else 3 if diam > 12 else 4 if diam > 8 else 5
+    a = 3
 
-    K = np.linspace(2,100,12)
+    K = np.linspace(2,G.num_vertices(),12)
     stress,NP = [], []
     for k in K:
 
@@ -115,23 +113,33 @@ def layout_directory():
     for graph in graph_paths:
         k_curve(graph.split('.')[0])
 
-def draw_hist(G,Xs):
-    for count in range(len(Xs)):
-        draw(G,Xs[count],output="drawings/update/test_{}.png".format(count))
+def draw_hist(G,Xs,d,w):
+    NP = []
+    cost = []
+    for count in range(len(Xs)-1):
+        if count % 100 == 0 or count < 100:
+            draw( G,Xs[count],output="drawings/update/test_{}.png".format(count) )
+            NP.append(get_neighborhood(Xs[count],d))
+            cost.append( calc_cost( Xs[count], d, w, 0.6/(count+1)))
+
+
+
+    import matplotlib.pyplot as plt
+    plt.plot(np.arange(len(NP)),NP)
+    plt.show()
+    plt.clf()
+    plt.plot(np.arange(len(cost)),cost)
+    plt.show()
 
 def drive(graph,hist=False):
     G = gt.load_graph("graphs/{}.dot".format(graph))
     d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
     d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
 
-    Xs = layout(G,d,d_norm,debug=True, k=2, a=5)
+    Xs,w = layout(G,d,d_norm,debug=True, k=7, a=5)
     if hist:
-        draw_hist(G,Xs)
+        draw_hist(G,Xs,d,w)
     else:
         draw(G,Xs[-1])
 
-<<<<<<< HEAD
-drive('10square',hist=True)
-=======
-k_curve('dwt_1005')
->>>>>>> 570a0348f4e14016e1a91ad0a2199103c61d534b
+drive('dwt_419',hist=True)

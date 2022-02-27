@@ -7,10 +7,12 @@ import modules.layout_io as layout_io
 import matplotlib.pyplot as plt
 import numpy as np
 import graph_tool.all as gt
+import networkx as nx
 import scipy.io
 
 from metrics import get_neighborhood, get_norm_stress
 from sklearn.metrics import pairwise_distances
+import random
 
 
 def display_stats(graph):
@@ -28,8 +30,86 @@ def display_stats(graph):
 
     print()
 
+def lin_log_random_graph(n=400):
+    G = gt.Graph(directed=False)
+    G.add_vertex(n=n)
 
-display_stats('price_1000')
-display_stats('rajat11')
-display_stats('block_2000')
-display_stats('oscil')
+    for i in range(n):
+        for j in range(i):
+            c1, c2 = i // 50, j // 50
+
+            if i == j and i < 4:
+                G.add_edge(i,j)
+            elif i == j and random.random() < 0.5:
+                G.add_edge(i,j)
+            elif i < 4 and j < 4 and random.random() < 0.2:
+                G.add_edge(i,j)
+            elif i >= 4 and j >= 4 and random.random() < 0.05:
+                G.add_edge(i,j)
+            elif random.random() < 0.1:
+                G.add_edge(i,j)
+    return G
+
+
+def convert_graph(H):
+    G = gt.Graph(directed=False)
+    G.add_vertex(n=len(H.nodes()))
+    for e in H.edges():
+        G.add_edge(e[0],e[1])
+    return G
+
+
+import re
+from io import StringIO
+
+import pandas as pd
+import graph_tool.stats as gts
+
+
+def pajTOgt(filepath, directed = False, removeloops = True):
+  if directed:
+    g = gt.Graph(directed=True)
+  else:
+    g = gt.Graph(directed=False)
+
+  #define edge and vertex properties
+  g.edge_properties["weight"] = g.new_edge_property("double")
+  g.vertex_properties["id"] = g.new_vertex_property("string")
+
+  with open(filepath, encoding = "utf-8") as input_data:
+    #create vertices
+    for line in input_data:
+        g.add_vertex(int(line.replace("*Vertices ", "").strip())) #add vertices
+        break
+
+    #label vertices
+    for line in input_data: #keeps going for node labels
+      if not line.strip() == '*Edges' or line.strip() == '*Arcs':
+        v_id = int(line.split()[0]) - 1
+        g.vertex_properties["id"][g.vertex(v_id)] = "".join(line.split()[1:])
+      else:
+        break
+
+    #create weighted edges
+    for line in input_data: #keeps going for edges
+      linesplit = line.split()
+      linesplit = [int(x) for x in linesplit[:2]] + [float(linesplit[2])]
+      if linesplit[2] > 0:
+        n1 = g.vertex(linesplit[0]-1)
+        n2 = g.vertex(linesplit[1]-1)
+        e = g.add_edge(n1, n2)
+        g.edge_properties["weight"][e] = linesplit[2]
+
+    if removeloops:
+      gts.remove_self_loops(g)
+
+    return g
+
+G = convert_graph(nx.random_partition_graph([100,100,100],0.3,0.001))
+G.save('graphs/partition.dot')
+
+G = lin_log_random_graph()
+G.save('graphs/lin_log_graph.dot')
+
+G = pajTOgt('graphs/MM_formats/ODLIS.NET')
+G.save('graphs/odlis.dot')

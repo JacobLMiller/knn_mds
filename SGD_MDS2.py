@@ -17,8 +17,10 @@ def satisfy(v,u,di,we,step,t=1,count=0):
 
     m = np.zeros(v.shape)
 
+    l_sum = 1+t
 
-    if we >= 1:
+
+    if di <= 1:
         wc = step / pow(di,2)
 
         pq = v-u #Vector between points
@@ -36,19 +38,19 @@ def satisfy(v,u,di,we,step,t=1,count=0):
         if wc > 1:
             wc = 1
         r = wc*r
-        m += (pq*r) /mag
+        m += (1/l_sum)*((pq*r) /mag)
         #m *= t
 
         #return v-m, u+m
     #else:
-    wc = step
+    wc = step if step < 0.1 else 0.1
     pq = v-u
     mag = np.linalg.norm(pq)
     if wc > 0.1:
         wc = 0.1
-    r = pq/(mag **2)
+    r = pq/(mag ** 2)
     r *= wc
-    m += -(t)*r
+    m += -(t/l_sum)*r
     return v-m,u+m
 
 @jit(nopython=True)
@@ -113,15 +115,16 @@ def solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False,t=1):
 
 
 @jit(nopython=True)
-def calc_cost(X,d,w):
+def calc_cost(X,d,w,t):
     cost, norm, n = 0, np.linalg.norm, len(X)
+    l_sum = 1+t
     for i in range(n):
         for j in range(i):
             pq = X[i]-X[j]
             mag = norm(pq)
             near = pow(mag-d[i][j],2) if d[i][j] <= 1 else 0
-            far = -np.log(mag)
-            cost += near+0.6*far
+            far = -(1/(2* n**2)) * np.log(mag)
+            cost += (1/l_sum) * near + (t/l_sum) * far
     return cost
 
 @jit(nopython=True)
@@ -132,14 +135,15 @@ def debug_solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False,t=1)
     max_change = 0
     #schedule = np.array([1/(np.sqrt(count+10)) for count in range(num_iter)])
 
-    yield X.copy()
 
     diam = np.max(d)
     indiam = 1/diam
+    hist = []
+    prev_cost = 80000
 
     for count in range(num_iter):
         t = (1)/(count + 1)
-        t = 0.6 if count < 15 else 0
+        t = 0.6 / (count+1)
         for _ in range(20):
             max_change = 0
             for i,j in indices:
@@ -154,12 +158,19 @@ def debug_solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False,t=1)
         step = schedule[min(count,len(schedule)-1)]
         #step = 0.1 if step > 0.1 else step
         shuffle(indices)
-        cost = calc_cost(X,d,w)
+        cost = calc_cost(X,d,w,t)
         print(cost)
+
+        hist.append(cost)
+
+        if abs(prev_cost-cost) < epsilon:
+            break
+        prev_cost = cost
 
 
         yield X.copy()
 
+    yield X.copy()
     return X
 
 
@@ -196,7 +207,7 @@ class SGD_MDS2:
         lamb = np.log(self.eta_min/self.eta_max)/(num_iter-1)
         sched = lambda count: self.eta_max*np.exp(lamb*count)
         #sched = lambda count: 1/np.sqrt(count+1)
-        return np.array([sched(count) for count in range(num_iter)])
+        return np.array([sched(count) for count in range(100)])
 
     def solve(self,num_iter=15,debug=False,t=1):
         indices = np.array(list(itertools.combinations(range(self.n), 2)))
