@@ -37,19 +37,17 @@ def get_w(G,k=5,a=5):
 
 def calc_LG(d,d_norm,G,k=8):
 
-    X = SGD_MDS2(d,weighted=True,w=get_w(G,k=k,a=5)).solve(15,debug=True)
+    X = SGD_MDS2(d,weighted=True,w=get_w(G,k=k,a=5)).solve(100,debug=True)
     X = layout_io.normalize_layout(X[-1])
 
-    pos = G.new_vp('vector<float>')
-    pos.set_2d_array(X.T)
-    gt.graph_draw(G,pos=pos)
-    return get_neighborhood(X,d),get_norm_stress(X,d_norm)
+
+    return get_neighborhood(X,d),get_norm_stress(X,d_norm),X
 
 def calc_high(d,d_norm,G,k=8):
     X = SGD_MDS(d).solve()
     X = layout_io.normalize_layout(X)
 
-    return get_neighborhood(X,d),get_norm_stress(X,d_norm)
+    return get_neighborhood(X,d),get_norm_stress(X,d_norm),X
 
 
 def main(n=5):
@@ -57,8 +55,9 @@ def main(n=5):
     import pickle
     import copy
 
-    path = 'tsnet-graphs/'
+    path = 'new_tests/'
     graph_paths = os.listdir(path)
+    print(graph_paths)
 
 
     template_score = {
@@ -87,17 +86,25 @@ def main(n=5):
         for i in range(n):
             print("Iteration number ", i)
 
-            NP,stress = calc_LG(d,d_norm,G,k=4,a=a)
+            NP,stress,X = calc_LG(d,d_norm,G,k=4)
             scores[graph]['LG_low']['NP'][i] = NP
             scores[graph]['LG_low']['stress'][i] = stress
             print("NP: ", NP)
 
-            NP,stress = calc_high(d,d_norm,G)
+            pos = G.new_vp('vector<float>')
+            pos.set_2d_array(X.T)
+            gt.graph_draw(G,pos=pos,output='drawings/low-high/{}_low.png'.format(graph.split('.')[0]))
+
+            NP,stress,X = calc_high(d,d_norm,G)
             scores[graph]['LG_high']['NP'][i] = NP
             scores[graph]['LG_high']['stress'][i] = stress
 
+            pos = G.new_vp('vector<float>')
+            pos.set_2d_array(X.T)
+            gt.graph_draw(G,pos=pos,output='drawings/low-high/{}_high.png'.format(graph.split('.')[0]))
 
-        with open('data/test_low5.pkl','wb') as myfile:
+
+        with open('data/new_graphs.pkl','wb') as myfile:
             pickle.dump(scores,myfile)
         myfile.close()
 

@@ -94,6 +94,33 @@ def q_ij_gaussian_var(Y):
 
 
 # Per point cost function
+def cost_var1(X, Y, sigma, l_kl, l_c, l_r, r_eps):
+    N = X.shape[0]
+
+    # Used to normalize s.t. the l_*'s sum up to one.
+    l_sum = l_kl + l_c + l_r
+
+    p_ij_conditional = p_ij_conditional_var(X, sigma)
+    p_ij = p_ij_sym_var(p_ij_conditional)
+    q_ij = q_ij_student_t_var(Y)
+
+    p_ij_safe = T.maximum(p_ij, epsilon)
+    q_ij_safe = T.maximum(q_ij, epsilon)
+
+    # Kullback-Leibler term
+    kl = T.sum(p_ij * T.log(p_ij_safe / q_ij_safe), axis=1)
+
+    # Compression term
+    compression = (1 / (2 * N)) * T.sum(Y**2, axis=1)
+
+    # Repulsion term
+    repulsion = -(1 / (2 * N**2)) * T.sum(T.fill_diagonal(T.log(euclidean_var(Y) + r_eps), 0), axis=1)
+
+    # Sum of all terms.
+    cost = (l_kl / l_sum) * kl + (l_c / l_sum) * compression + (l_r / l_sum) * repulsion
+
+    return cost
+
 def cost_var(X, Y, sigma, l_kl, l_c, l_r, r_eps):
     N = X.shape[0]
 
@@ -228,6 +255,8 @@ def find_Y(X_shared, Y_shared, sigma_shared, N, output_dims, n_epochs,
 
     # Gradient of the cost w.r.t. Y
     grad_Y = T.grad(cost, Y)
+
+    print(cost)
 
     # Returns relative magnitude of stepsize, normalized by N, lr, and the range of the layout.
     stepsize = T.sum(T.sum(Yv ** 2, axis=1) ** 0.5) / (N * lr * T.max(T.max(Y, axis=0) - T.min(Y, axis=0)))

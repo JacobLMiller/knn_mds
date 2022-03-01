@@ -34,24 +34,29 @@ def lin_log_random_graph(n=400):
     G = gt.Graph(directed=False)
     G.add_vertex(n=n)
 
+    part  = n // 8
+    half = n // 2
+
     for i in range(n):
         for j in range(i):
-            c1, c2 = i // 50, j // 50
+            c1, c2 = i // part, j // part
 
-            if i == j and i < 4:
+
+            if i == j and i < half and j < half:
                 G.add_edge(i,j)
             elif i == j and random.random() < 0.5:
                 G.add_edge(i,j)
-            elif i < 4 and j < 4 and random.random() < 0.2:
+            elif i < half and j < half and random.random() < 0.2:
                 G.add_edge(i,j)
-            elif i >= 4 and j >= 4 and random.random() < 0.05:
+            elif i >= half and j >= half and random.random() < 0.05:
                 G.add_edge(i,j)
-            elif random.random() < 0.1:
+            elif i < half and j >= half and random.random() < 0.1:
                 G.add_edge(i,j)
     return G
 
 
 def convert_graph(H):
+    H = nx.convert_node_labels_to_integers(H)
     G = gt.Graph(directed=False)
     G.add_vertex(n=len(H.nodes()))
     for e in H.edges():
@@ -105,11 +110,24 @@ def pajTOgt(filepath, directed = False, removeloops = True):
 
     return g
 
-G = convert_graph(nx.random_partition_graph([100,100,100],0.3,0.001))
-G.save('graphs/partition.dot')
+import autograd.numpy as np  
+from autograd import grad
 
-G = lin_log_random_graph()
-G.save('graphs/lin_log_graph.dot')
 
-G = pajTOgt('graphs/MM_formats/ODLIS.NET')
-G.save('graphs/odlis.dot')
+d = np.array( [
+                [0,1,np.sqrt(2)],
+                [1,0,1],
+                [np.sqrt(2),1,0]
+            ] )
+def tanh(x):                 # Define a function
+    stress = 0
+    for i in range(len(x)):
+        for j in range(i):
+            stress += pow(np.linalg.norm(x[i]-x[j]) - d[i][j],2)
+    return stress
+grad_tanh = grad(tanh)
+print(grad_tanh(np.array([
+                        [0,2],
+                        [1,1],
+                        [1,0]
+                        ])))

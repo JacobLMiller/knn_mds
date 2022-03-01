@@ -53,7 +53,7 @@ def stress(X,d):
             stress += pow(np.linalg.norm(X[i]-X[j])-d[i][j],2)
     return pow(stress,0.5)
 
-with open('data/test_low2.pkl', 'rb') as myfile:
+with open('data/test_low6.pkl', 'rb') as myfile:
     data = pickle.load(myfile)
 
 print(data.keys())

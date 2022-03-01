@@ -19,7 +19,7 @@ def get_stress(X,d):
             for j in range(i):
                 sig += pow(a*norm(X[i]-X[j]) - d[i][j],2) / pow(d[i][j],2)
         return sig
-    
+
     from scipy.optimize import minimize_scalar
     min_a = minimize_scalar(stress)
     print("a is ",min_a.x)
@@ -43,6 +43,8 @@ def get_neighborhood(X,d,rg = 2):
 
     NP = 0
     for i in range(len(X)):
+        if len(k_theory[i]) <= 0:
+            continue
         intersect = np.intersect1d(k_theory[i],k_embedded[i]).size
         jaccard = intersect / (2*k_theory[i].size - intersect)
 

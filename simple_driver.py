@@ -35,7 +35,9 @@ def get_w(G,k=5,a=5):
 
     return w
 
-    w = get_w(k=k,a=a)
+def layout(G,d,d_norm,debug=True, k=7, a=5):
+    k = k if k < G.num_vertices() else G.num_vertices()
+    w = get_w(G,k=k,a=a)
     Y = SGD_MDS2(d,weighted=True,w=w)
     Xs = Y.solve(100,debug=debug)
 
@@ -85,12 +87,12 @@ def k_curve(graph):
     CC,_ = gt.global_clustering(G)
     a = 3
 
-    K = np.linspace(2,G.num_vertices(),12)
+    K = np.linspace(2,G.num_vertices()-1,12)
     stress,NP = [], []
     for k in K:
 
         k = int(k)
-        X = layout(G,d,d_norm,debug=True,k=k,a=a)
+        X,w = layout(G,d,d_norm,debug=True,k=k,a=a)
         draw(G,X[-1],output='drawings/{}_k{}.png'.format(graph,k))
 
         stress.append(get_norm_stress(X[-1],d_norm))
@@ -108,7 +110,7 @@ def k_curve(graph):
 
 def layout_directory():
     import os
-    graph_paths = os.listdir('tsnet-graphs/')
+    graph_paths = os.listdir('new_tests/')
     for graph in graph_paths:
         k_curve(graph.split('.')[0])
 
@@ -118,8 +120,8 @@ def draw_hist(G,Xs,d,w):
     for count in range(len(Xs)-1):
         if count % 100 == 0 or count < 100:
             draw( G,Xs[count],output="drawings/update/test_{}.png".format(count) )
-            NP.append(get_neighborhood(Xs[count],d))
-            cost.append( calc_cost( Xs[count], d, w, 0.6/(count+1)))
+            # NP.append(get_neighborhood(Xs[count],d))
+            # cost.append( calc_cost( Xs[count], d, w, 0.6))
 
 
 
@@ -137,11 +139,25 @@ def drive(graph,hist=False):
     d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
     d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
 
-    Xs,w = layout(G,d,d_norm,debug=True, k=7, a=5)
+    Xs,w = layout(G,d,d_norm,debug=True, k=2, a=5)
     if hist:
         draw_hist(G,Xs,d,w)
     else:
         draw(G,Xs[-2])
 
+def drive_new(graph,hist=False):
+    G = gt.load_graph("graphs/{}.dot".format(graph))
+    d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
+    d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
 
-drive('dwt_419',hist=True)
+    from SGD_MDS_debug import SGD_d
+    Y = SGD_d(d)
+    X = Y.solve()
+    X = [x for x in X]
+    if hist:
+        draw_hist(G,X,1,1)
+    else:
+        draw(G,X)
+
+
+drive_new('10square',hist=True)

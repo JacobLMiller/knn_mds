@@ -56,7 +56,7 @@ def satisfy2(v,u,di,we,step,t=1,count=0):
     return v-m,u+m
 
 @jit(nopython=True)
-def satisfy(v,u,di,we,step,N,t=1,c=1.2):
+def satisfy(v,u,di,we,step,N,t=1):
 
     we = 1 if di == 1 else 0
 
@@ -69,14 +69,13 @@ def satisfy(v,u,di,we,step,N,t=1,c=1.2):
     pq = v-u
     mag = np.linalg.norm(pq)
 
-    stress = (wc*pq*((mag-di)/2)) / mag
-    stress *= we
+    stress = (mag-di) * (pq/mag)
+    stress *= we*step
 
-    compression = 0 * (1 / (2 * N)) * (2*(v+u))
 
-    repulsion = -(pq/(mag **2))
+    repulsion = -t*(pq/(mag **2)) * (1-we)
 
-    m = (1/l_sum) * stress + (c/l_sum) * compression + (t/l_sum) * repulsion
+    m = (1/l_sum) * stress + (t/l_sum) * repulsion
 
     return v-m, u+m
 
@@ -148,8 +147,8 @@ def calc_cost(X,d,w,t):
         for j in range(i):
             pq = X[i]-X[j]
             mag = norm(pq)
-            near = pow(mag-d[i][j],2) if d[i][j] <= 1 else 0
-            far = -(1/(2* n**2)) * np.log(mag)
+            near = pow(mag-d[i][j],2) if w[i][j] >= 1 else 0
+            far = -np.log(mag) if w[i][j] < 1 else 0
             cost += (1/l_sum) * near + (t/l_sum) * far
     return cost
 
@@ -160,36 +159,33 @@ def debug_solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False,t=1)
     shuffle(indices)
     max_change = 0
     n = len(X)
-    stress_hist = []
     #schedule = np.array([1/(np.sqrt(count+10)) for count in range(num_iter)])
 
 
     diam = np.max(d)
     indiam = 1/diam
-    hist = []
     prev_cost = 80000
 
     for count in range(num_iter):
         t = (1)/(count + 1)
-        t = 0.6 / (count+1)
+        t = 0.6 
         for _ in range(20):
             max_change = 0
             for i,j in indices:
                 we = w[i][j] if w[i][j] == 1 else w[j][i]
                 before = np.linalg.norm(X[i]-X[j])
-                X[i],X[j] = satisfy(X[i],X[j],d[i][j],we,step,N=n,t=t,c=c)
+                X[i],X[j] = satisfy(X[i],X[j],d[i][j],we,step,N=n,t=t)
                 after = np.linalg.norm(X[i]-X[j])
                 max_change = max(max_change, abs(after-before))
             if max_change < 1e-5:
                 break
 
         step = schedule[min(count,len(schedule)-1)]
+        step = 0.01
 
         shuffle(indices)
         cost = calc_cost(X,d,w,t)
         print(cost)
-
-        hist.append(cost)
 
         if abs(prev_cost-cost) < epsilon:
             break
