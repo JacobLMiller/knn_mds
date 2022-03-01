@@ -58,7 +58,7 @@ def satisfy2(v,u,di,we,step,t=1,count=0):
 @jit(nopython=True)
 def satisfy(v,u,di,we,step,N,t=1):
 
-    we = 1 if di == 1 else 0
+    #we = 1 if di == 1 else 0
 
     l_sum = 1+t
 
@@ -141,20 +141,7 @@ def solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False,t=1):
 
     return X
 
-@jit(nopython=True)
-def calc_cost2(X,t,d,w):                 # Define a function
-    stress, l_sum = 0, 1+t
-    N = len(X)
 
-    #Stress
-    ss = (X * X).sum(axis=1)
-    diff = np.sqrt(ss.reshape((N, 1)) + ss.reshape((1, N)) - 2 * X.dot(X.T))
-    stress = np.sum( w * np.square(d-diff) )
-
-    #repulsion
-    r = -np.sum( np.log(diff) )
-
-    return (1/l_sum) * stress + (t/l_sum) * r
 
 @jit(nopython=True)
 def calc_cost(X,d,w,t):
@@ -164,8 +151,8 @@ def calc_cost(X,d,w,t):
             pq = X[i]-X[j]
             mag = norm(pq)
             near = pow(mag-d[i][j],2) if w[i][j] >= 1 else 0
-            far = -np.log(mag)
-            cost += (1/l_sum) * near + (t/l_sum) * far
+            far = np.log(mag)
+            cost += (1/l_sum) * near - (t/l_sum) * far
     return cost
 
 @jit(nopython=True)
@@ -185,7 +172,7 @@ def debug_solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False,t=1)
     for count in range(num_iter):
         t = (1)/(count + 1)
         t = 0.6
-        for _ in range(20):
+        for _ in range(50):
             max_change = 0
             for i,j in indices:
                 we = w[i][j] if w[i][j] == 1 else w[j][i]
@@ -197,7 +184,7 @@ def debug_solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False,t=1)
                 break
 
         step = schedule[min(count,len(schedule)-1)]
-        #step = 0.01
+        step = 0.01
 
         shuffle(indices)
         #cost = calc_cost2(X,d,w,t)

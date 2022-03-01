@@ -143,23 +143,30 @@ def euclidean_var(X):
     return np.sqrt(ss.reshape((N, 1)) + ss.reshape((1, N)) - 2 * X.dot(X.T))
 
 w = np.ones(d.shape,dtype='float64')
+nplog = np.log
+log = lambda v: nplog(v,out=np.zeros_like(v),where=(v != 0))
+
+eps = 1e-13
 def stress(X,t):                 # Define a function
     stress, l_sum = 0, 1+t
     N = len(X)
 
     #Stress
     ss = (X * X).sum(axis=1)
-    diff = np.sqrt(ss.reshape((N, 1)) + ss.reshape((1, N)) - 2 * np.dot(X,X.T) )
+    diff = ss.reshape((N, 1)) + ss.reshape((1, N)) - 2 * np.dot(X,X.T)
+    diff = np.sqrt(diff+eps)
     stress = np.sum( w * np.square(d-diff) )
     print(stress)
 
     #repulsion
-    r = -np.sum( np.log(diff+1e-9) )
+    r = -np.sum( np.log(diff+eps) )
 
-    return (1/l_sum) * stress + (t/l_sum) * r
+    return (1/l_sum) * np.sum(diff) + (t/l_sum) * r
 
 
 grad_stress = grad(stress)
 
 print(stress(A,0.6) )
 print(grad_stress(A,0.6))
+
+FD = (stress(A+0.001,0.6) + stress(A-0.001,0.6)) / 0.002

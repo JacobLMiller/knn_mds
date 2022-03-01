@@ -120,8 +120,8 @@ def draw_hist(G,Xs,d,w):
     for count in range(len(Xs)-1):
         if count % 100 == 0 or count < 100:
             draw( G,Xs[count],output="drawings/update/test_{}.png".format(count) )
-            NP.append(get_neighborhood(Xs[count],d))
-            cost.append( calc_cost( Xs[count], d, w, 0.6))
+            # NP.append(get_neighborhood(Xs[count],d))
+            # cost.append( calc_cost( Xs[count], d, w, 0.6 ) )
 
 
 
@@ -129,6 +129,7 @@ def draw_hist(G,Xs,d,w):
     # plt.plot(np.arange(len(NP)),NP)
     # plt.show()
     # plt.clf()
+    # plt.suptitle("Cost function")
     # plt.plot(np.arange(len(cost)),cost)
     # plt.show()
 
@@ -139,7 +140,7 @@ def drive(graph,hist=False):
     d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
     d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
 
-    Xs,w = layout(G,d,d_norm,debug=True, k=3, a=1)
+    Xs,w = layout(G,d,d_norm,debug=True, k=2, a=1)
     if hist:
         draw_hist(G,Xs,d,w)
     else:
@@ -160,4 +161,5 @@ def drive_new(graph,hist=False):
         draw(G,X)
 
 
-drive('10square',hist=True)
+#drive('10square',hist=True)
+drive_new('10square',hist=True)

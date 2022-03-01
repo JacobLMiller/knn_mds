@@ -121,4 +121,4 @@ def find_opts(G_list):
         print("Optimal k is {} and optimal a is {}".format(k,a))
         print()
 
-find_opts([gt.lattice([i,i]) for i in range(5,6)])
+find_opts([gt.load_graph('graphs/10square.dot')])

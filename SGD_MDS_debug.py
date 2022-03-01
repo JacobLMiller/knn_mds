@@ -240,24 +240,28 @@ class SGD_d:
 
         d = self.d
         w = self.w
+        w = np.ones(d.shape)
         X = self.X
 
+        eps = 1e-13
         def stress(X,t):                 # Define a function
             stress, l_sum = 0, 1+t
             N = len(X)
 
             #Stress
             ss = (X * X).sum(axis=1)
-            diff = np.sqrt(ss.reshape((N, 1)) + ss.reshape((1, N)) - 2 * X.dot(X.T))
+            diff = ss.reshape((N, 1)) + ss.reshape((1, N)) - 2 * np.dot(X,X.T)
+            diff = np.sqrt(diff+eps)
             stress = np.sum( w * np.square(d-diff) )
 
             #repulsion
-            r = -np.sum( np.log(diff) )
+            r = -np.sum( np.log(diff+eps) )
 
-            return (1/l_sum) * stress + (t/l_sum) * r
+            return (1/l_sum) * np.sum(diff) #+ (t/l_sum) * r
 
         step = 0.01
         grad_stress= grad(stress)
+        print(stress(X,t))
         for _ in range(num_iter):
             t = 0.6
             X -= step*grad_stress(X,t)
