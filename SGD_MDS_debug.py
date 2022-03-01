@@ -218,7 +218,7 @@ class SGD_d:
             # self.w = set_w(self.d,k)
             self.w = w
         else:
-            self.w = np.array([[ 1 if i != j else 0 for i in range(self.n)]
+            self.w = np.array([[ 1 if self.d[i][j] == 1 else 0 for i in range(self.n)]
                         for j in range(self.n)])
 
         w_min = 1/pow(self.d_max,2)
@@ -236,23 +236,32 @@ class SGD_d:
     def solve(self,num_iter=15,debug=False,t=1):
         import autograd.numpy as np
         from autograd import grad
+        from sklearn.metrics import pairwise_distances
 
         d = self.d
         w = self.w
         X = self.X
 
-        def stress(x):                 # Define a function
-            stress = 0
-            for i in range(len(x)):
-                for j in range(i):
-                    stress += w[i][j] * pow(np.linalg.norm(x[i]-x[j]) - d[i][j],2) - np.log(np.linalg.norm(x[i]-x[j]))
-            return stress
+        def stress(X,t):                 # Define a function
+            stress, l_sum = 0, 1+t
+            N = len(X)
+
+            #Stress
+            ss = (X * X).sum(axis=1)
+            diff = np.sqrt(ss.reshape((N, 1)) + ss.reshape((1, N)) - 2 * X.dot(X.T))
+            stress = np.sum( w * np.square(d-diff) )
+
+            #repulsion
+            r = -np.sum( np.log(diff) )
+
+            return (1/l_sum) * stress + (t/l_sum) * r
 
         step = 0.01
         grad_stress= grad(stress)
         for _ in range(num_iter):
-            X -= step*grad_stress(X)
-            print(stress(X))
+            t = 0.6
+            X -= step*grad_stress(X,t)
+            print(stress(X,t))
             yield X.copy()
 
         return X.copy()
