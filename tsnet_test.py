@@ -9,8 +9,8 @@ if __name__ == '__main__':
     parser.add_argument('--star', action='store_true', help='Use the tsNET* scheme. (Requires PivotMDS layout in ./pivotmds_layouts/ as initialization.)\nNote: Use higher learning rates for larger graphs, for faster convergence.')
     parser.add_argument('--perplexity', '-p', type=float, default=40, help='Perplexity parameter.')
     parser.add_argument('--learning_rate', '-l', type=float, default=50, help='Learning rate (hyper)parameter for optimization.')
-    parser.add_argument('--output', '-o', type=str, help='Save layout to the specified file.')
     parser.add_argument('--alpha', '-a', type=float, default=1.0, help='Proportion of local to global.')
+    parser.add_argument('--output', '-o', type=str, help='Save layout to the specified file.')
 
     args = parser.parse_args()
 
@@ -22,6 +22,7 @@ if __name__ == '__main__':
     import modules.distance_matrix as distance_matrix
     import modules.thesne as thesne
 
+    print(args.alpha)
     # Check for valid input
     assert(os.path.isfile(args.input_graph))
     graph_name = os.path.splitext(os.path.basename(args.input_graph))[0]
@@ -95,13 +96,10 @@ if __name__ == '__main__':
 
     # Show layout on the screen
     gt.graph_draw(g, pos=pos)
+    X = distance_matrix.get_distance_matrix(g, 'spdm', verbose=False,normalize=False)
     X_norm = distance_matrix.get_distance_matrix(g, 'spdm', verbose=False,normalize=True)
-    from metrics import get_neighborhood, tsnet_stress,get_stress
+    from metrics import get_neighborhood, get_stress
     print(get_neighborhood(Y,X))
-    print(get_stress(Y,X_norm))
-    print("----------------")
-
-
     # for i in range(len(hist)):
     #     print(get_neighborhood(hist[i],X))
     #     pos = g.new_vp('vector<float>')
@@ -113,9 +111,58 @@ if __name__ == '__main__':
     if args.output is not None:
         ##Jacob addition
         layout_io.save_layout(args.output, g, Y)
-        myObj = [g,Y]
-        import pickle
-        with open('tsnet_block.pkl', 'wb') as myfile:
-            pickle.dump(myObj, myfile)
-        #End Jacob addition
-        print('Saved layout data in "{}"'.format(args.output))
+
+    import numpy as np
+    import matplotlib.pyplot as plt
+
+    import os
+    graph_paths = os.listdir('new_tests/')
+    ['block_2000.dot']
+
+    for graph in graph_paths:
+        print("On graph: {}".format(graph))
+        G = gt.load_graph('graphs/{}'.format(graph))
+        X = distance_matrix.get_distance_matrix(G, 'spdm', verbose=False,normalize=False)
+        X_norm = distance_matrix.get_distance_matrix(G, 'spdm', verbose=False,normalize=True)
+        stress, NP = {}, {}
+
+        A = np.linspace(0,1,6)
+        for a in A:
+            Y,hist = thesne.tsnet(
+                X, output_dims=2, random_state=1, perplexity=args.perplexity, n_epochs=n,
+                Y=Y_init,
+                initial_lr=args.learning_rate, final_lr=args.learning_rate, lr_switch=n // 2,
+                initial_momentum=momentum, final_momentum=momentum, momentum_switch=n // 2,
+                initial_l_kl=lambdas_2[0], final_l_kl=lambdas_3[0], l_kl_switch=n // 2,
+                initial_l_c=lambdas_2[1], final_l_c=lambdas_3[1], l_c_switch=n // 2,
+                initial_l_r=lambdas_2[2], final_l_r=lambdas_3[2], l_r_switch=n // 2,
+                r_eps=r_eps, autostop=tolerance, window_size=window_size,
+                verbose=True, a=a
+            )
+            if Y is None:
+                continue
+
+            Y = layout_io.normalize_layout(Y)
+            stress[a] = get_stress(Y,X_norm)
+            NP[a] = get_neighborhood(Y,X)
+            print(stress[a])
+            print(NP[a])
+
+            pos = G.new_vp('vector<float>')
+            pos.set_2d_array(Y.T)
+            # Show layout on the screen
+            gt.graph_draw(G, pos=pos,output='drawings/mod_tsnet/{}_a{}.png'.format(graph.split('.')[0], round(a,2)) )
+        if Y is None:
+            continue
+
+        x = [a for a in NP.keys()]
+        yNP = [NP[a] for a in x]
+        xStress = [stress[a] for a in x]
+        plt.plot(x,yNP, label='NP')
+        plt.plot(x,xStress,label='Stress')
+        plt.suptitle(graph.split('.')[0])
+        plt.ylabel('stress/NP')
+        plt.xlabel('alpha')
+        plt.legend()
+        plt.savefig('figures/mod_tsnet/{}.png'.format(graph.split('.')[0]))
+        plt.clf()

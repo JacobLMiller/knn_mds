@@ -12,17 +12,25 @@ def get_norm_stress(X,d):
             stress += pow(d[i][j] - norm(X[i]-X[j]),2)
     return stress / np.sum(np.square(d))
 
+def tsnet_stress(X,d):
+    N = len(X)
+    ss = (X * X).sum(axis=1)
+    diff = np.sqrt( ss.reshape((N, 1)) + ss.reshape((1, N)) - 2 * np.dot(X,X.T) )
+    np.fill_diagonal(diff,0)
+    return np.sum( np.square(diff-d)  ) / np.sum(np.square(d))
+    #return np.sum( np.square( np.divide( (diff-d), d , out=np.zeros_like(d), where=d!=0) ) )
+
 def get_stress(X,d):
-    def stress(a=1):
-        sig,norm = 0, np.linalg.norm
-        for i in range(len(X)):
-            for j in range(i):
-                sig += pow(a*norm(X[i]-X[j]) - d[i][j],2) / pow(d[i][j],2)
-        return sig
+    from math import comb
+    N = len(X)
+    ss = (X * X).sum(axis=1)
+    diff = np.sqrt( ss.reshape((N, 1)) + ss.reshape((1, N)) - 2 * np.dot(X,X.T) )
+    np.fill_diagonal(diff,0)
+    stress = lambda a:  np.sum( np.square( np.divide( (a*diff-d), d , out=np.zeros_like(d), where=d!=0) ) ) / comb(N,2)
 
     from scipy.optimize import minimize_scalar
     min_a = minimize_scalar(stress)
-    print("a is ",min_a.x)
+    #print("a is ",min_a.x)
     return stress(a=min_a.x)
 
 def get_neighborhood(X,d,rg = 2):

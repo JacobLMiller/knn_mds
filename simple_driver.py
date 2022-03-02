@@ -87,7 +87,7 @@ def k_curve(graph):
     CC,_ = gt.global_clustering(G)
     a = 3
 
-    K = np.linspace(2,G.num_vertices()-1,12)
+    K = np.linspace(5,G.num_vertices()-1,7)
     stress,NP = [], []
     for k in K:
 
@@ -95,7 +95,7 @@ def k_curve(graph):
         X,w = layout(G,d,d_norm,debug=True,k=k,a=a)
         draw(G,X[-1],output='drawings/{}_k{}.png'.format(graph,k))
 
-        stress.append(get_norm_stress(X[-1],d_norm))
+        stress.append(get_stress(X[-1],d_norm))
         NP.append(get_neighborhood(X[-1],d))
 
 
@@ -164,4 +164,4 @@ def drive_new(graph,hist=False):
 
 
 #drive('10square',hist=True)
-drive_new('block2',hist=True)
+k_curve('block2')

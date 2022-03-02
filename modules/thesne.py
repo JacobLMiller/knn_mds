@@ -121,9 +121,8 @@ def cost_var1(X, Y, sigma, l_kl, l_c, l_r, r_eps):
 
     return cost
 
-def cost_var(X, Y, sigma, l_kl, l_c, l_r, r_eps):
+def cost_var(X, Y, sigma, l_kl, l_c, l_r, r_eps,a):
     N = X.shape[0]
-    a = 0
 
     # Used to normalize s.t. the l_*'s sum up to one.
     l_sum = l_kl + l_c + l_r
@@ -145,12 +144,12 @@ def cost_var(X, Y, sigma, l_kl, l_c, l_r, r_eps):
     repulsion = -(1 / (2 * N**2)) * T.sum(T.fill_diagonal(T.log(euclidean_var(Y) + r_eps), 0), axis=1)
 
     #Stress
-    stress = (1 / 2* N**2) * T.sum(T.maximum((euclidean_var(Y) - X) ** 2, epsilon), axis=1)
+    stress = (1 / (2 * N **2)) * T.sum(T.fill_diagonal((euclidean_var(Y)-X) ** 2 + r_eps, 0), axis=1)
 
     # Sum of all terms.
     cost = (l_kl / l_sum) * kl + (l_c / l_sum) * compression + (l_r / l_sum) * repulsion
 
-    return a*cost + (1-a)*stress
+    return a*0.5*cost + (1-a)*0.5*stress
 
 
 # Binary search on sigma for a given perplexity
@@ -195,9 +194,11 @@ def find_sigma(X_shared, sigma_shared, N, perplexity, sigma_iters, verbose=0):
         if verbose:
             print('Finding sigmas... Iteration {0}/{1}: Perplexities in [{2:.4f}, {3:.4f}].'.format(i + 1, sigma_iters, np.exp(e.min()), np.exp(e.max())), end='\r')
         if np.any(np.isnan(np.exp(e))):
+            return None
             raise SigmaTooLowException('Invalid sigmas. The perplexity is probably too low.')
     if verbose:
         print('\nDone. Perplexities in [{0:.4f}, {1:.4f}].'.format(np.exp(e.min()), np.exp(e.max())))
+    return 1
 
 
 # Perform momentum-based gradient descent on the cost function with the given
@@ -208,7 +209,8 @@ def find_Y(X_shared, Y_shared, sigma_shared, N, output_dims, n_epochs,
            initial_l_kl, final_l_kl, l_kl_switch,
            initial_l_c, final_l_c, l_c_switch,
            initial_l_r, final_l_r, l_r_switch,
-           r_eps, autostop=False, window_size=10, verbose=0):
+           r_eps, autostop=False, window_size=10, verbose=0,
+           a=1):
     # Optimization hyperparameters
     initial_lr = np.array(initial_lr, dtype=floath)
     final_lr = np.array(final_lr, dtype=floath)
@@ -250,7 +252,7 @@ def find_Y(X_shared, Y_shared, sigma_shared, N, output_dims, n_epochs,
     Yv_shared = theano.shared(np.zeros((N, output_dims), dtype=floath))
 
     # Function for retrieving cost for all individual data points
-    costs = cost_var(X, Y, sigma, l_kl, l_c, l_r, r_eps)
+    costs = cost_var(X, Y, sigma, l_kl, l_c, l_r, r_eps,a)
 
     # Sum of all costs (scalar)
     cost = T.sum(costs)
@@ -356,13 +358,10 @@ def find_Y(X_shared, Y_shared, sigma_shared, N, output_dims, n_epochs,
         update_Y()
 
         jacob_hist.append(Y_shared.get_value())
-        if hap:
-            print(X_shared.get_value())
-            hap = False
 
 
         c = get_cost()
-        print(c)
+        #print(c)
         if np.isnan(float(c)):
             raise NaNException('Encountered NaN for cost.')
 
@@ -370,7 +369,7 @@ def find_Y(X_shared, Y_shared, sigma_shared, N, output_dims, n_epochs,
             if autostop and epoch >= window_size:
                 dlast_period = stepsize_over_time[epoch - window_size:epoch]
                 max_stepsize = dlast_period.max()
-                #print('Epoch: {0}. Cost: {1:.6f}. Max step size of last {2}: {3:.2e}'.format(epoch + 1, float(c), window_size, max_stepsize), end='\r')
+                print('Epoch: {0}. Cost: {1:.6f}. Max step size of last {2}: {3:.2e}'.format(epoch + 1, float(c), window_size, max_stepsize), end='\r')
             else:
                 print('Epoch: {0}. Cost: {1:.6f}.'.format(epoch + 1, float(c)), end='\r')
 
@@ -402,7 +401,8 @@ def tsnet(X, perplexity=30, Y=None, output_dims=2, n_epochs=1000,
          initial_l_c=None, final_l_c=None, l_c_switch=None,
          initial_l_r=None, final_l_r=None, l_r_switch=None,
          r_eps=1, random_state=None,
-         autostop=False, window_size=10, verbose=1):
+         autostop=False, window_size=10, verbose=1,
+         a=1):
     #random_state = check_random_state(random_state)
     random_state = check_random_state(None)
 
@@ -418,7 +418,10 @@ def tsnet(X, perplexity=30, Y=None, output_dims=2, n_epochs=1000,
     Y_shared = theano.shared(np.asarray(Y, dtype=floath))
 
     # Find sigmas to attain the given perplexity.
-    find_sigma(X_shared, sigma_shared, N, perplexity, sigma_iters, verbose)
+    work = find_sigma(X_shared, sigma_shared, N, perplexity, sigma_iters, verbose)
+    if work is None:
+        print('hello')
+        return None, None
 
     # Do the optimization to find Y (the node coordinates).
     Y,hist = find_Y(
@@ -428,7 +431,7 @@ def tsnet(X, perplexity=30, Y=None, output_dims=2, n_epochs=1000,
         initial_l_kl, final_l_kl, l_kl_switch,
         initial_l_c, final_l_c, l_c_switch,
         initial_l_r, final_l_r, l_r_switch,
-        r_eps, autostop, window_size, verbose
+        r_eps, autostop, window_size, verbose, a=a
     )
 
     # Return the vertex coordinates.
