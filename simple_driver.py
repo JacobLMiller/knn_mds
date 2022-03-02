@@ -42,7 +42,7 @@ def layout(G,d,d_norm,debug=True, k=7, a=5):
     Xs = Y.solve(100,debug=debug)
 
     if debug:
-         #Xs = [layout_io.normalize_layout(X) for X in Xs]
+        #Xs = [layout_io.normalize_layout(X) for X in Xs]
         print("Local SGD: Stress: {}, NP: {}".format(get_norm_stress(Xs[-1],d_norm),get_neighborhood(Xs[-1],d)))
         return Xs,w
     else:
@@ -163,5 +163,5 @@ def drive_new(graph,hist=False):
         draw(G,X)
 
 
-#drive('10square',hist=True)
-k_curve('block2')
+drive('dwt_419',hist=True)
+#k_curve('block2')

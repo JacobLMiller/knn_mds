@@ -58,7 +58,7 @@ def satisfy2(v,u,di,we,step,t=1,count=0):
 @jit(nopython=True)
 def satisfy(v,u,di,we,step,N,t=1):
 
-    #we = 1 if di == 1 else 0
+    we = 1 if di == 1 else 0
 
     l_sum = 1+t
 
@@ -146,12 +146,13 @@ def solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False,t=1):
 @jit(nopython=True)
 def calc_cost(X,d,w,t):
     cost, norm, n, l_sum = 0, np.linalg.norm, len(X), 1+t
+    #n_2 = math.comb(n,2)
     for i in range(n):
         for j in range(i):
             pq = X[i]-X[j]
             mag = norm(pq)
-            near = pow(mag-d[i][j],2) if w[i][j] >= 1 else 0
-            far = np.log(mag)
+            near = (1/n ** 2) * pow(mag-d[i][j],2) if d[i][j] <= 1 else 0
+            far = (1/n ** 2) * np.log(mag)
             cost += (1/l_sum) * near - (t/l_sum) * far
     return cost
 
@@ -172,7 +173,7 @@ def debug_solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False,t=1)
     for count in range(num_iter):
         t = (1)/(count + 1)
         t = 0.6
-        for _ in range(50):
+        for _ in range(20):
             max_change = 0
             for i,j in indices:
                 we = w[i][j] if w[i][j] == 1 else w[j][i]
@@ -184,11 +185,12 @@ def debug_solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False,t=1)
                 break
 
         step = schedule[min(count,len(schedule)-1)]
-        step = 0.01
+        step = 20/(count + 2)
+        #step = 0.01
 
         shuffle(indices)
-        #cost = calc_cost2(X,d,w,t)
-        #print(cost)
+        cost = calc_cost(X,d,w,t)
+        print(cost)
 
         # if abs(prev_cost-cost) < epsilon:
         #     break
