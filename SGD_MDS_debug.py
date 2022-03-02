@@ -239,8 +239,8 @@ class SGD_d:
         from sklearn.metrics import pairwise_distances
 
         d = self.d
+        w = (self.d == 1).astype('int')
         w = self.w
-        w = np.ones(d.shape)
         X = self.X
 
         eps = 1e-13
@@ -257,19 +257,25 @@ class SGD_d:
             #repulsion
             r = -np.sum( np.log(diff+eps) )
 
-            return (1/l_sum) * np.sum(diff) #+ (t/l_sum) * r
+            return (1/l_sum) * np.sum(stress) + (t/l_sum) * r
 
-        step = 0.01
+        step,change,momentum = 0.001, 0.0, 0.3
         grad_stress= grad(stress)
         print(stress(X,t))
         for _ in range(num_iter):
-            t = 0.6
-            X -= step*grad_stress(X,t)
+            step = 1/(_+1)
+            t = 0.1
+
+            x_prime = grad_stress(X,t)
+            new_change = step * x_prime + momentum * change
+
+            X -= new_change
+            change = new_change
+
             print(stress(X,t))
             yield X.copy()
 
         return X.copy()
-
 
 
     def calc_stress(self):

@@ -120,18 +120,18 @@ def draw_hist(G,Xs,d,w):
     for count in range(len(Xs)-1):
         if count % 100 == 0 or count < 100:
             draw( G,Xs[count],output="drawings/update/test_{}.png".format(count) )
-            # NP.append(get_neighborhood(Xs[count],d))
-            # cost.append( calc_cost( Xs[count], d, w, 0.6 ) )
+            NP.append(get_neighborhood(Xs[count],d))
+            cost.append( calc_cost( Xs[count], d, w, 0.6 ) )
 
 
 
-    # import matplotlib.pyplot as plt
-    # plt.plot(np.arange(len(NP)),NP)
-    # plt.show()
-    # plt.clf()
-    # plt.suptitle("Cost function")
-    # plt.plot(np.arange(len(cost)),cost)
-    # plt.show()
+    import matplotlib.pyplot as plt
+    plt.plot(np.arange(len(NP)),NP)
+    plt.show()
+    plt.clf()
+    plt.suptitle("Cost function")
+    plt.plot(np.arange(len(cost)),cost)
+    plt.show()
 
 
 
@@ -151,15 +151,17 @@ def drive_new(graph,hist=False):
     d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
     d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
 
+    w = get_w(G,k=2,a=3)
+
     from SGD_MDS_debug import SGD_d
-    Y = SGD_d(d)
-    X = Y.solve(30)
+    Y = SGD_d(d,weighted=True, w = w)
+    X = Y.solve(1000)
     X = [x for x in X]
     if hist:
-        draw_hist(G,X,1,1)
+        draw_hist(G,X,d,w)
     else:
         draw(G,X)
 
 
 #drive('10square',hist=True)
-drive_new('10square',hist=True)
+drive_new('block2',hist=True)

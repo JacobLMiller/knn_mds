@@ -156,12 +156,11 @@ def stress(X,t):                 # Define a function
     diff = ss.reshape((N, 1)) + ss.reshape((1, N)) - 2 * np.dot(X,X.T)
     diff = np.sqrt(diff+eps)
     stress = np.sum( w * np.square(d-diff) )
-    print(stress)
 
     #repulsion
     r = -np.sum( np.log(diff+eps) )
 
-    return (1/l_sum) * np.sum(diff) + (t/l_sum) * r
+    return (1/l_sum) *np.sum(stress) + (t/l_sum) * r
 
 
 grad_stress = grad(stress)
@@ -169,4 +168,4 @@ grad_stress = grad(stress)
 print(stress(A,0.6) )
 print(grad_stress(A,0.6))
 
-FD = (stress(A+0.001,0.6) + stress(A-0.001,0.6)) / 0.002
+#FD = (stress(A+0.001,0.6) + stress(A-0.001,0.6)) / 0.002
