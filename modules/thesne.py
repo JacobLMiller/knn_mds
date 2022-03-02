@@ -123,6 +123,7 @@ def cost_var1(X, Y, sigma, l_kl, l_c, l_r, r_eps):
 
 def cost_var(X, Y, sigma, l_kl, l_c, l_r, r_eps):
     N = X.shape[0]
+    a = 0
 
     # Used to normalize s.t. the l_*'s sum up to one.
     l_sum = l_kl + l_c + l_r
@@ -143,13 +144,14 @@ def cost_var(X, Y, sigma, l_kl, l_c, l_r, r_eps):
     # Repulsion term
     repulsion = -(1 / (2 * N**2)) * T.sum(T.fill_diagonal(T.log(euclidean_var(Y) + r_eps), 0), axis=1)
 
+    #Stress
+    stress = (1 / 2* N**2) * T.sum(T.maximum((euclidean_var(Y) - X) ** 2, epsilon), axis=1)
+
     # Sum of all terms.
     cost = (l_kl / l_sum) * kl + (l_c / l_sum) * compression + (l_r / l_sum) * repulsion
 
-    return cost
+    return a*cost + (1-a)*stress
 
-def go_print(thing):
-    print(thing)
 
 # Binary search on sigma for a given perplexity
 def find_sigma(X_shared, sigma_shared, N, perplexity, sigma_iters, verbose=0):
@@ -256,7 +258,6 @@ def find_Y(X_shared, Y_shared, sigma_shared, N, output_dims, n_epochs,
     # Gradient of the cost w.r.t. Y
     grad_Y = T.grad(cost, Y)
 
-    print(cost)
 
     # Returns relative magnitude of stepsize, normalized by N, lr, and the range of the layout.
     stepsize = T.sum(T.sum(Yv ** 2, axis=1) ** 0.5) / (N * lr * T.max(T.max(Y, axis=0) - T.min(Y, axis=0)))
@@ -330,7 +331,7 @@ def find_Y(X_shared, Y_shared, sigma_shared, N, output_dims, n_epochs,
     # Optimization loop
     converged = False
 
-    jacob_hist = []
+    jacob_hist,hap = [], True
 
     for epoch in range(n_epochs):
 
@@ -355,10 +356,13 @@ def find_Y(X_shared, Y_shared, sigma_shared, N, output_dims, n_epochs,
         update_Y()
 
         jacob_hist.append(Y_shared.get_value())
+        if hap:
+            print(X_shared.get_value())
+            hap = False
 
 
         c = get_cost()
-        #print(c)
+        print(c)
         if np.isnan(float(c)):
             raise NaNException('Encountered NaN for cost.')
 

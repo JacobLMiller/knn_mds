@@ -259,20 +259,24 @@ class SGD_d:
 
             return (1/l_sum) * np.sum(stress) + (t/l_sum) * r
 
-        step,change,momentum = 0.001, 0.0, 0.3
+        step,change,momentum = 0.01, 0.0, 0.8
         grad_stress= grad(stress)
         print(stress(X,t))
+        t = 0.6
         for _ in range(num_iter):
             step = 1/(_+1)
-            t = 0.1
+
 
             x_prime = grad_stress(X,t)
             new_change = step * x_prime + momentum * change
 
             X -= new_change
+
+
             change = new_change
 
-            print(stress(X,t))
+
+            #print(stress(X,t))
             yield X.copy()
 
         return X.copy()
