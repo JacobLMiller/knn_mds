@@ -12,6 +12,7 @@ drawings/test3
 drawings/tsnet
 
 *.pkl
+!mnist_8_3.pkl
 
 
 # C extensions
