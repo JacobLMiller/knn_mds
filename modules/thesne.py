@@ -418,10 +418,10 @@ def tsnet(X, perplexity=30, Y=None, output_dims=2, n_epochs=1000,
     Y_shared = theano.shared(np.asarray(Y, dtype=floath))
 
     # Find sigmas to attain the given perplexity.
-    work = find_sigma(X_shared, sigma_shared, N, perplexity, sigma_iters, verbose)
-    if work is None:
-        print('hello')
-        return None, None
+    work = None
+    while work is None:
+        work = find_sigma(X_shared, sigma_shared, N, perplexity, sigma_iters, verbose)
+        if work is None: perplexity += 1
 
     # Do the optimization to find Y (the node coordinates).
     Y,hist = find_Y(

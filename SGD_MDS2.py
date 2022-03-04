@@ -58,7 +58,7 @@ def satisfy2(v,u,di,we,step,t=1,count=0):
 @jit(nopython=True)
 def satisfy(v,u,di,we,step,N,t=1):
 
-    we = 1 if di == 1 else 0
+    #we = 1 if di == 1 else 0
 
     l_sum = 1+t
 
@@ -189,8 +189,8 @@ def debug_solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False,t=1)
         #step = 0.01
 
         shuffle(indices)
-        cost = calc_cost(X,d,w,t)
-        print(cost)
+        #cost = calc_cost(X,d,w,t)
+        print(count)
 
         # if abs(prev_cost-cost) < epsilon:
         #     break
@@ -204,7 +204,7 @@ def debug_solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False,t=1)
 
 
 class SGD_MDS2:
-    def __init__(self,dissimilarities,k=5,weighted=False,w = np.array([]), init_pos=np.array([])):
+    def __init__(self,dissimilarities,k=5,weighted=False,w = np.array([]),radius=False, init_pos=np.array([])):
         self.d = dissimilarities
         self.d_max = np.max(dissimilarities)
         self.d_min = 1
@@ -222,6 +222,9 @@ class SGD_MDS2:
         if weighted:
             # self.w = set_w(self.d,k)
             self.w = w
+        elif radius:
+            self.w = np.array( [[1 if self.d[i][j] <= k else 0 for i in range(self.n)]
+                        for j in range(self.n)])
         else:
             self.w = np.array([[ 1 if i != j else 0 for i in range(self.n)]
                         for j in range(self.n)])

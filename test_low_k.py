@@ -9,7 +9,9 @@ from SGD_MDS import SGD_MDS
 
 from sklearn.metrics import pairwise_distances
 
-from metrics import get_norm_stress,get_neighborhood
+from metrics import get_stress,get_neighborhood
+
+import matplotlib.pyplot as plt
 
 def get_w(G,k=5,a=5):
     A = gt.adjacency(G).toarray()
@@ -32,22 +34,111 @@ def get_w(G,k=5,a=5):
                 w[i][j] = 1
                 w[j][i] = 1
 
-
     return w
 
-def calc_LG(d,d_norm,G,k=8):
+def draw(G,X,output=None):
+    pos = G.new_vp('vector<float>')
+    pos.set_2d_array(X.T)
+    #
+    if output:
+        gt.graph_draw(G,pos=pos,output=output)
+    else:
+        gt.graph_draw(G,pos=pos)
 
-    X = SGD_MDS2(d,weighted=True,w=get_w(G,k=k,a=5)).solve(100,debug=True)
-    X = layout_io.normalize_layout(X[-1])
+def calc_adj(graph,G,d,d_norm):
+    NP,stress = [],[]
+    K = np.linspace( 5,G.num_vertices()-1, 8)
+    for k in K:
+        k = int(k)
+        w = get_w(G,k=k,a=5)
+        Y = SGD_MDS2(d,w=w,radius=False)
+        Xs = Y.solve(50,debug=True)
+        X = layout_io.normalize_layout(Xs[-1])
+        stress.append(get_stress(X,d_norm))
+        NP.append(get_neighborhood(X,d))
+
+        draw(G,X,output='drawings/random_graphs/adjacency_power/{}_k{}.png'.format(graph,k))
 
 
-    return get_neighborhood(X,d),get_norm_stress(X,d_norm),X
+    plt.plot(K, stress, label="Stress")
+    plt.plot(K, NP, label="NP")
+    plt.suptitle(graph)
+    plt.xlabel("k")
+    plt.legend()
+    plt.savefig('figures/adjacency_kcurve_{}.png'.format(graph))
+    plt.clf()
 
-def calc_high(d,d_norm,G,k=8):
-    X = SGD_MDS(d).solve()
-    X = layout_io.normalize_layout(X)
+    return np.array(NP),np.array(stress)
 
-    return get_neighborhood(X,d),get_norm_stress(X,d_norm),X
+def calc_radius(graph,G,d,d_norm):
+    NP,stress = [],[]
+    K = list(range(1,8+1))
+    for k in K:
+        w = get_w(G,k=k,a=5)
+        Y = SGD_MDS2(d,radius=True)
+        Xs = Y.solve(50,debug=True)
+        X = layout_io.normalize_layout(Xs[-1])
+        stress.append(get_stress(X,d_norm))
+        NP.append(get_neighborhood(X,d))
+
+        draw(G,X,output='drawings/random_graphs/radius/{}_k{}.png'.format(graph,k))
+
+
+    plt.plot(K, stress, label="Stress")
+    plt.plot(K, NP, label="NP")
+    plt.suptitle(graph)
+    plt.xlabel("k")
+    plt.legend()
+    plt.savefig('figures/radius_kcurve_{}.png'.format(graph))
+    plt.clf()
+
+    return np.array(NP),np.array(stress)
+
+def calc_linear(graph,G,d,d_norm):
+    NP,stress = [],[]
+    A = np.linspace(0,1,8)
+    for a in A:
+
+        n = 1000
+        momentum = 0.5
+        tolerance = 1e-7
+        window_size = 40
+        # Cost function parameters
+        r_eps = 0.05
+        # Phase 2 cost function parameters
+        lambdas_2 = [1, 1.2, 0]
+        # Phase 3 cost function parameters
+        lambdas_3 = [1, 0.01, 0.6]
+
+        Y,hist = thesne.tsnet(
+            d, output_dims=2, random_state=1, perplexity=40, n_epochs=n,
+            Y=None,
+            initial_lr=50, final_lr=50, lr_switch=n // 2,
+            initial_momentum=momentum, final_momentum=momentum, momentum_switch=n // 2,
+            initial_l_kl=lambdas_2[0], final_l_kl=lambdas_3[0], l_kl_switch=n // 2,
+            initial_l_c=lambdas_2[1], final_l_c=lambdas_3[1], l_c_switch=n // 2,
+            initial_l_r=lambdas_2[2], final_l_r=lambdas_3[2], l_r_switch=n // 2,
+            r_eps=r_eps, autostop=tolerance, window_size=window_size,
+            verbose=True, a=a
+        )
+
+        X = layout_io.normalize_layout(Y)
+        stress.append(get_stress(X,d_norm))
+        NP.append(get_neighborhood(X,d))
+
+        draw(G,X,output='drawings/random_graphs/linear_comb/{}_a{}.png'.format(graph,a))
+
+
+    plt.plot(A, stress, label="Stress")
+    plt.plot(A, NP, label="NP")
+    plt.suptitle(graph)
+    plt.xlabel("a")
+    plt.legend()
+    plt.savefig('figures/linear_kcurve_{}.png'.format(graph))
+    plt.clf()
+
+    return np.array(NP),np.array(stress)
+
 
 
 def main(n=5):
@@ -55,25 +146,26 @@ def main(n=5):
     import pickle
     import copy
 
-    path = 'new_tests/'
+    path = 'random_runs/'
     graph_paths = os.listdir(path)
+
+    graph_paths = list( map(lambda s: s.split('.')[0], graph_paths) )
     print(graph_paths)
 
+    adjacency_len = len( np.linspace(5,100,8) )
+    radius_len = len( list(range(1,8+1) ))
+    linear_len = len( np.linspace(0,1,8) )
 
-    template_score = {
-        'NP' : [None for i in range(n)],
-        'stress': [None for i in range(n)]
-    }
+    zeros = lambda s: np.zeros(s)
+    alg_dict = {'adjacency_power': {'NP': zeros(adjacency_len), 'stress': zeros(adjacency_len)},
+                'radius': {'NP': zeros(radius_len), 'stress': zeros(radius_len)},
+                'linear': {'NP': zeros(linear_len), 'stress': zeros(linear_len)}
+                }
 
-    template_alg = {
-        'LG_low': copy.deepcopy(template_score),
-        'LG_high': copy.deepcopy(template_score)
-    }
-
-    scores = {key : copy.deepcopy(template_alg) for key in graph_paths}
+    graph_dict = {key: copy.deepcopy(alg_dict) for key in graph_paths}
 
     for graph in graph_paths:
-        G = gt.load_graph(path+graph)
+        G = gt.load_graph(path+graph + '.dot')
         d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
         d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
 
@@ -86,28 +178,26 @@ def main(n=5):
         for i in range(n):
             print("Iteration number ", i)
 
-            NP,stress,X = calc_LG(d,d_norm,G,k=4)
-            scores[graph]['LG_low']['NP'][i] = NP
-            scores[graph]['LG_low']['stress'][i] = stress
-            print("NP: ", NP)
+            NP,stress = calc_adj(graph,G,d,d_norm)
+            graph_dict[graph]['adjacency_power']['NP'] += NP
+            graph_dict[graph]['adjacency_power']['stress'] += stress
 
-            pos = G.new_vp('vector<float>')
-            pos.set_2d_array(X.T)
-            gt.graph_draw(G,pos=pos,output='drawings/low-high/{}_low.png'.format(graph.split('.')[0]))
+            NP,stress = calc_radius(graph,G,d,d_norm)
+            graph_dict[graph]['radius']['NP'] += NP
+            graph_dict[graph]['radius']['stress'] += stress
 
-            NP,stress,X = calc_high(d,d_norm,G)
-            scores[graph]['LG_high']['NP'][i] = NP
-            scores[graph]['LG_high']['stress'][i] = stress
+            NP,stress = calc_linear(graph,G,d,d_norm)
+            graph_dict[graph]['linear']['NP'] += NP
+            graph_dict[graph]['linear']['stress'] += stress
 
-            pos = G.new_vp('vector<float>')
-            pos.set_2d_array(X.T)
-            gt.graph_draw(G,pos=pos,output='drawings/low-high/{}_high.png'.format(graph.split('.')[0]))
+        for alg in alg_dict.keys():
+            for metric in ['NP','stress']:
+                graph_dict[graph][alg][metric] /= n
 
-
-        with open('data/new_graphs.pkl','wb') as myfile:
-            pickle.dump(scores,myfile)
+        with open('data/random_graphs.pkl','wb') as myfile:
+            pickle.dump(graph_dict,myfile)
         myfile.close()
 
 
 if __name__ == "__main__":
-    main(n=1)
+    main(n=5)

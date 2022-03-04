@@ -71,14 +71,7 @@ def custom_cluster(n=100,k=5,p_in=0.99,p_out=0.01):
                 G.add_edge(i,j)
 
     return G
-bad = True
-while bad:
-    G = convert_graph( nx.Graph(nx.connected_watts_strogatz_graph(200, random.randint(0,20), random.random()) ))
-    clust = gt.local_clustering(G)
-    print(gt.vertex_average(G,clust)[0])
-    if gt.vertex_average(G,clust)[0] > 0.5:
-        G.save('graphs/connected_watss_strogatz_200.dot')
-        bad = False
+
 
 # G = social_model(p=0.1)
 # clust = gt.local_clustering(G)
@@ -107,3 +100,19 @@ graph_paths = os.listdir('graphs/')
 #     G = gt.load_graph('graphs/{}'.format(graph))
 #     clust = gt.local_clustering(G)
 #     print("Graph: {}, CC: {}".format(graph, gt.vertex_average(G,clust)) )
+
+
+for n in [100,200,300,400,500,700,1000,1500]:
+    print(n)
+    bad = True
+    while bad:
+        k = random.randint(2,30)
+        #G = convert_graph( nx.Graph(nx.connected_watts_strogatz_graph(n, k, random.random()) ))
+        #G = custom_cluster(n=n,k=k)
+        G = convert_graph( nx.Graph( nx.powerlaw_cluster_graph(n,k,p=random.random()) ) )
+        clust = gt.local_clustering(G)
+        CC,_ = gt.vertex_average(G,clust)
+        print(CC)
+        if CC > 0.6:
+            G.save('random_runs/powerlaw{}.dot'.format(n))
+            bad = False
