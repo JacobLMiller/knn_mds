@@ -11,7 +11,7 @@ import graph_tool.all as gt
 from metrics import get_neighborhood, get_norm_stress
 from sklearn.metrics import pairwise_distances
 
-graph = "dwt_419"
+graph = "connected_watss_strogatz_200"
 
 G = gt.load_graph("graphs/{}.dot".format(graph))
 
@@ -121,4 +121,4 @@ def find_opts(G_list):
         print("Optimal k is {} and optimal a is {}".format(k,a))
         print()
 
-find_opts([gt.load_graph('graphs/10square.dot')])
+#find_opts([gt.load_graph('graphs/10square.dot')])
