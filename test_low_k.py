@@ -4,7 +4,8 @@ import modules.layout_io as layout_io
 import modules.distance_matrix as distance_matrix
 import modules.thesne as thesne
 
-from SGD_MDS2 import SGD_MDS2
+#from SGD_MDS2 import SGD_MDS2
+from SGD_MDS_debug import SGD_d
 from SGD_MDS import SGD_MDS
 
 from sklearn.metrics import pairwise_distances
@@ -51,9 +52,10 @@ def calc_adj(graph,G,d,d_norm):
     for k in K:
         k = int(k)
         w = get_w(G,k=k,a=5)
-        Y = SGD_MDS2(d,w=w,radius=False)
-        Xs = Y.solve(50,debug=True)
-        X = layout_io.normalize_layout(Xs[-1])
+        Y = SGD_d(d,w=w,weighted=True)
+        sol = [x for x in Y.solve(1500,debug=True,radius=False)]
+        Xs = sol[-1]
+        X = layout_io.normalize_layout(Xs)
         stress.append(get_stress(X,d_norm))
         NP.append(get_neighborhood(X,d))
 
@@ -75,9 +77,10 @@ def calc_radius(graph,G,d,d_norm):
     K = list(range(1,8+1))
     for k in K:
         w = get_w(G,k=k,a=5)
-        Y = SGD_MDS2(d,radius=True)
-        Xs = Y.solve(50,debug=True)
-        X = layout_io.normalize_layout(Xs[-1])
+        Y = SGD_d(d,weighted=True,w=w)
+        sol = [x for x in Y.solve(1500,debug=True,radius=True)]
+        Xs = sol[-1]
+        X = layout_io.normalize_layout(Xs)
         stress.append(get_stress(X,d_norm))
         NP.append(get_neighborhood(X,d))
 
@@ -165,9 +168,11 @@ def main(n=5):
     graph_dict = {key: copy.deepcopy(alg_dict) for key in graph_paths}
 
     for graph in graph_paths:
+        print(graph)
         G = gt.load_graph(path+graph + '.dot')
         d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
         d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
+        if G.num_vertices() > 999: continue
 
         CC,_ = gt.global_clustering(G)
         a = 2 if CC < 0.1 else 3 if CC < 0.4 else 4 if CC < 0.6 else 5
@@ -200,4 +205,4 @@ def main(n=5):
 
 
 if __name__ == "__main__":
-    main(n=5)
+    main(n=3)

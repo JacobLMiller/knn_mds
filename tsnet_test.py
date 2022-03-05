@@ -116,12 +116,12 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
     import os
-    graph_paths = os.listdir('new_tests/')
-    ['block_2000.dot']
+    graph_paths = os.listdir('random_runs/')
+    #['block_2000.dot']
 
     for graph in graph_paths:
         print("On graph: {}".format(graph))
-        G = gt.load_graph('graphs/{}'.format(graph))
+        G = gt.load_graph('random_runs/{}'.format(graph))
         X = distance_matrix.get_distance_matrix(G, 'spdm', verbose=False,normalize=False)
         X_norm = distance_matrix.get_distance_matrix(G, 'spdm', verbose=False,normalize=True)
         stress, NP = {}, {}

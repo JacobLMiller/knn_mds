@@ -1,4 +1,4 @@
-from SGD_MDS2 import SGD_MDS2, calc_cost
+from SGD_MDS2 import SGD_MDS2
 from SGD_MDS import SGD_MDS
 
 import modules.distance_matrix as distance_matrix
@@ -8,8 +8,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import graph_tool.all as gt
 
-from metrics import get_neighborhood, get_norm_stress, get_stress
+from metrics import get_neighborhood, get_norm_stress, get_stress,get_cost
 from sklearn.metrics import pairwise_distances
+
+from SGD_MDS_debug import SGD_d
+
 
 def get_w(G,k=5,a=5):
     A = gt.adjacency(G).toarray()
@@ -30,19 +33,19 @@ def get_w(G,k=5,a=5):
         for j in k_nearest[i]:
             if i != j:
                 w[i][j] = 1
-                #w[j][i] = 1
+                w[j][i] = 1
 
-
+    print(w)
     return w
 
-def layout(G,d,d_norm,debug=True, k=7, a=5):
+def layout(G,d,d_norm,debug=True, k=7, a=5,radius=False):
     k = k if k < G.num_vertices() else G.num_vertices()
     w = get_w(G,k=k,a=a)
-    Y = SGD_MDS2(d,weighted=True,w=w)
-    Xs = Y.solve(100,debug=debug)
+    Y = SGD_d(d,weighted=True,w=w)
+    Xs = [x for x in Y.solve(1500,debug=debug,radius=radius)]
 
     if debug:
-        #Xs = [layout_io.normalize_layout(X) for X in Xs]
+        Xs = [layout_io.normalize_layout(X) for X in Xs]
         print("Local SGD: Stress: {}, NP: {}".format(get_norm_stress(Xs[-1],d_norm),get_neighborhood(Xs[-1],d)))
         return Xs,w
     else:
@@ -50,11 +53,17 @@ def layout(G,d,d_norm,debug=True, k=7, a=5):
 
 
 def draw(G,X,output=None):
+    from graph_tool import GraphView
+
     pos = G.new_vp('vector<float>')
     pos.set_2d_array(X.T)
     #
+    u = GraphView(G, efilt=lambda e: True)
+    deg = G.degree_property_map("total")
+    deg.a = 4 * (np.sqrt(deg.a) * 0.5 + 0.4)
+
     if output:
-        gt.graph_draw(G,pos=pos,output=output)
+        gt.graph_draw(u,pos=pos,vertex_size=deg,output=output)
     else:
         gt.graph_draw(G,pos=pos)
 
@@ -76,27 +85,30 @@ def stress_curve():
     plt.legend()
     plt.show()
 
-def k_curve(graph):
+def k_curve(graph,radius=False, n=5):
     print(graph)
 
-    G = gt.load_graph("graphs/{}.dot".format(graph))
+    G = gt.load_graph("random_runs/{}.dot".format(graph))
     d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
     d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
 
     diam = np.max(d)
     CC,_ = gt.global_clustering(G)
-    a = 3
+    a = 5
 
-    K = np.linspace(5,G.num_vertices()-1,7)
-    stress,NP = [], []
-    for k in K:
+    K = np.linspace(5,100,12) if not radius else np.array([1,2,3,4,5,6,7])
+    stress,NP = np.zeros(K.shape), np.zeros(K.shape)
+    for _ in range(n):
+        for i in range(len(K)):
 
-        k = int(k)
-        X,w = layout(G,d,d_norm,debug=True,k=k,a=a)
-        draw(G,X[-1],output='drawings/{}_k{}.png'.format(graph,k))
+            k = int(K[i])
+            X,w = layout(G,d,d_norm,debug=True,k=k,a=a,radius=radius)
+            draw(G,X[-1],output='drawings/{}_k{}.png'.format(graph,k))
 
-        stress.append(get_stress(X[-1],d_norm))
-        NP.append(get_neighborhood(X[-1],d))
+            stress[i] += get_stress(X[-1],d_norm)
+            NP[i] += (get_neighborhood(X[-1],d))
+    stress = stress/n
+    NP = NP/n
 
 
     plt.plot(K.astype(int), stress, label="Stress")
@@ -114,17 +126,19 @@ def layout_directory():
     for graph in graph_paths:
         k_curve(graph.split('.')[0])
 
-def draw_hist(G,Xs,d,w):
+def draw_hist(G,Xs,d,w,Y):
     NP = []
     cost = []
+
+
     for count in range(len(Xs)-1):
         if count % 100 == 0 or count < 100:
             draw( G,Xs[count],output="drawings/update/test_{}.png".format(count) )
             NP.append(get_neighborhood(Xs[count],d))
-            cost.append( calc_cost( Xs[count], d, w, 0.6 ) )
+            cost.append( get_cost( Xs[count], d, w, 0.6 ) )
 
 
-
+    print("NP: ", NP[-1])
     import matplotlib.pyplot as plt
     plt.plot(np.arange(len(NP)),NP)
     plt.show()
@@ -135,33 +149,28 @@ def draw_hist(G,Xs,d,w):
 
 
 
-def drive(graph,hist=False):
-    G = gt.load_graph("graphs/{}.dot".format(graph))
+
+
+def drive(graph,hist=False,radius=False):
+    G = gt.load_graph("random_runs/{}.dot".format(graph))
     d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
     d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
 
-    Xs,w = layout(G,d,d_norm,debug=True, k=2, a=1)
-    if hist:
-        draw_hist(G,Xs,d,w)
-    else:
-        draw(G,Xs[-2])
+    K = np.linspace( 5,G.num_vertices()-1, 8)
 
-def drive_new(graph,hist=False):
-    G = gt.load_graph("graphs/{}.dot".format(graph))
-    d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
-    d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
+    w = get_w(G,k=10,a=5)
+    k=1
+    w = w if not radius else (d <= k).astype('int')
 
-    w = get_w(G,k=2,a=3)
 
-    from SGD_MDS_debug import SGD_d
     Y = SGD_d(d,weighted=True, w = w)
-    X = Y.solve(1000)
+    X = Y.solve(2000)
     X = [x for x in X]
     if hist:
-        draw_hist(G,X,d,w)
+        draw_hist(G,X,d,w,Y)
     else:
         draw(G,X)
 
 
-drive('dwt_419',hist=True)
-#k_curve('block2')
+drive('powerlaw400',hist=True,radius=False)
+# k_curve('powerlaw300',radius=False)

@@ -33,6 +33,22 @@ def get_stress(X,d):
     #print("a is ",min_a.x)
     return stress(a=min_a.x)
 
+def get_cost(X,d,w,t):                 # Define a function
+    stress, l_sum,eps = 0, 1+t,1e-13
+    N = len(X)
+
+    #Stress
+    ss = (X * X).sum(axis=1)
+    diff = ss.reshape((N, 1)) + ss.reshape((1, N)) - 2 * np.dot(X,X.T)
+    diff = np.sqrt(diff+eps)
+    stress = np.sum( w * np.square(d-diff) )
+
+    #repulsion
+    r = -np.sum( np.log(diff+eps) )
+
+    return (1/l_sum) * np.sum(stress) + (t/l_sum) * r
+
+
 def get_neighborhood(X,d,rg = 2):
     """
     How well do the local neighborhoods represent the theoretical neighborhoods?

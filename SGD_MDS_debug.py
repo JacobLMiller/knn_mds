@@ -181,7 +181,7 @@ def debug_solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False,t=1)
                 break
 
         step = schedule[min(count,len(schedule)-1)]
-        step = 0.01
+        step = 0.1
 
         shuffle(indices)
         cost = calc_cost(X,d,w,t)
@@ -199,7 +199,7 @@ def debug_solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False,t=1)
 
 
 class SGD_d:
-    def __init__(self,dissimilarities,k=5,weighted=False,w = np.array([]), init_pos=np.array([])):
+    def __init__(self,dissimilarities,k=5,weighted=True,w = np.array([]), init_pos=np.array([])):
         self.d = dissimilarities
         self.d_max = np.max(dissimilarities)
         self.d_min = 1
@@ -233,25 +233,29 @@ class SGD_d:
         #sched = lambda count: 1/np.sqrt(count+1)
         return np.array([sched(count) for count in range(100)])
 
-    def solve(self,num_iter=15,debug=False,t=1):
+    def solve(self,num_iter=15,debug=False,t=1,radius=False, k=1,tol=1e-8):
         import autograd.numpy as np
         from autograd import grad
         from sklearn.metrics import pairwise_distances
 
         d = self.d
-        w = (self.d == 1).astype('int')
-        w = self.w
+        w = 0.5* np.copy(self.w) if not radius else 0.5*np.copy((self.d <= k).astype('int'))
         X = self.X
+        N = len(X)
+
+        sizes = np.zeros(num_iter)
+        movement = lambda X,X_c,step: np.sum(np.sum(X_c ** 2, axis=1) ** 0.5) / (N * step * np.max(np.max(X, axis=0) - np.min(X, axis=0)))
 
         eps = 1e-13
+        epsilon = np.ones(d.shape)*eps
         def stress(X,t):                 # Define a function
             stress, l_sum = 0, 1+t
-            N = len(X)
+
 
             #Stress
             ss = (X * X).sum(axis=1)
             diff = ss.reshape((N, 1)) + ss.reshape((1, N)) - 2 * np.dot(X,X.T)
-            diff = np.sqrt(diff+eps)
+            diff = np.sqrt(np.maximum(diff,epsilon))
             stress = np.sum( w * np.square(d-diff) )
 
             #repulsion
@@ -259,39 +263,34 @@ class SGD_d:
 
             return (1/l_sum) * np.sum(stress) + (t/l_sum) * r
 
-        step,change,momentum = 0.01, 0.0, 0.8
-        grad_stress= grad(stress)
+        step,change,momentum = 0.001, 0.0, 0.5
+        grad_stress = grad(stress)
         print(stress(X,t))
-        t = 0.6
-        for _ in range(num_iter):
-            step = 1/(_+1)
-
+        t = 0.1
+        for epoch in range(num_iter):
 
             x_prime = grad_stress(X,t)
+
             new_change = step * x_prime + momentum * change
 
             X -= new_change
 
+            if abs(new_change-change).max() < 1e-3: momentum = 0.8
+            sizes[epoch] = movement(X,new_change,step)
 
             change = new_change
 
+            if epoch > 40:
+                max_change = sizes[epoch - 40 : epoch].max()
+                print("Max change over last 40 epochs: {}".format(max_change),end='\r')
+                if max_change < tol: break
 
             #print(stress(X,t))
+            self.X = X
             yield X.copy()
-
+        self.X = X
         return X.copy()
 
-
-    def calc_stress(self):
-        stress = 0
-        #normalize matrices
-        d = self.d/np.max(self.d)
-        X = self.X/np.max(self.X)
-        for i in range(self.n):
-            for j in range(self.n):
-                if i != j:
-                    stress += pow(self.d[i][j] - norm(self.X[i]-self.X[j]),2)
-        return stress / np.sum(np.square(self.d))
 
     def calc_distortion(self,X,d):
         distortion = 0

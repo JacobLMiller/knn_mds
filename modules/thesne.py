@@ -149,7 +149,7 @@ def cost_var(X, Y, sigma, l_kl, l_c, l_r, r_eps,a):
     # Sum of all terms.
     cost = (l_kl / l_sum) * kl + (l_c / l_sum) * compression + (l_r / l_sum) * repulsion
 
-    return a*cost + (1-a)*stress
+    return (1-a)*cost + (a)*stress
 
 
 # Binary search on sigma for a given perplexity
