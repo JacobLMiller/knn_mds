@@ -48,10 +48,11 @@ def draw(G,X,output=None):
 
 def calc_adj(graph,G,d,d_norm):
     NP,stress = [],[]
-    K = np.linspace( 5,G.num_vertices()-1, 8)
+    K = np.linspace( 5,100, 12)
+    a = 3 if graph[0] == 'p' else 5
     for k in K:
         k = int(k)
-        w = get_w(G,k=k,a=5)
+        w = get_w(G,k=k,a=a)
         Y = SGD_d(d,w=w,weighted=True)
         sol = [x for x in Y.solve(1500,debug=True,radius=False)]
         Xs = sol[-1]
@@ -99,10 +100,10 @@ def calc_radius(graph,G,d,d_norm):
 
 def calc_linear(graph,G,d,d_norm):
     NP,stress = [],[]
-    A = np.linspace(0,1,8)
+    A = np.linspace(0,1,12)
     for a in A:
 
-        n = 1000
+        n = 1500
         momentum = 0.5
         tolerance = 1e-7
         window_size = 40
@@ -172,7 +173,7 @@ def main(n=5):
         G = gt.load_graph(path+graph + '.dot')
         d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
         d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
-        if G.num_vertices() > 999: continue
+        #if G.num_vertices() > 999: continue
 
         CC,_ = gt.global_clustering(G)
         a = 2 if CC < 0.1 else 3 if CC < 0.4 else 4 if CC < 0.6 else 5
@@ -187,10 +188,6 @@ def main(n=5):
             graph_dict[graph]['adjacency_power']['NP'] += NP
             graph_dict[graph]['adjacency_power']['stress'] += stress
 
-            NP,stress = calc_radius(graph,G,d,d_norm)
-            graph_dict[graph]['radius']['NP'] += NP
-            graph_dict[graph]['radius']['stress'] += stress
-
             NP,stress = calc_linear(graph,G,d,d_norm)
             graph_dict[graph]['linear']['NP'] += NP
             graph_dict[graph]['linear']['stress'] += stress
@@ -199,10 +196,10 @@ def main(n=5):
             for metric in ['NP','stress']:
                 graph_dict[graph][alg][metric] /= n
 
-        with open('data/random_graphs.pkl','wb') as myfile:
+        with open('data/random_graphs1.pkl','wb') as myfile:
             pickle.dump(graph_dict,myfile)
         myfile.close()
 
 
 if __name__ == "__main__":
-    main(n=3)
+    main(n=30)

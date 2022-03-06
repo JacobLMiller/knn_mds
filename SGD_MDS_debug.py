@@ -12,191 +12,6 @@ import random
 
 norm = lambda x: np.linalg.norm(x,ord=2)
 
-@jit(nopython=True)
-def satisfy2(v,u,di,we,step,t=1,count=0):
-
-    l_sum = 1+t
-
-    m = np.zeros(v.shape)
-
-    l_sum = 1+t
-
-
-    if di <= 1:
-        wc = step / pow(di,2)
-
-        pq = v-u #Vector between points
-
-        mag = np.linalg.norm(pq)
-        #r = (mag-self.d[i][j])/2 #min distance to satisfy constraint
-        wc = step
-
-        # if we < 0.9 and random.random()<0.1:
-        #     r = (mag-10*self.d_max)/2
-        #     wc = step
-        # elif we > 0.9:
-        r = (mag-(di))/2
-
-        if wc > 1:
-            wc = 1
-        r = wc*r
-        m += (1/l_sum)*((pq*r) /mag)
-        #m *= t
-
-        #return v-m, u+m
-    #else:
-    wc = step if step < 0.1 else 0.1
-    pq = v-u
-    mag = np.linalg.norm(pq)
-    if wc > 0.1:
-        wc = 0.1
-    r = pq/(mag ** 2)
-    r *= wc
-    m += -(t/l_sum)*r
-    return v-m,u+m
-
-@jit(nopython=True)
-def satisfy(v,u,di,we,step,N,t=1):
-
-    we = 1 if di == 1 else 0
-
-    l_sum = 1+t
-
-    m = np.zeros(v.shape)
-
-    wc = 1
-
-    pq = v-u
-    mag = np.linalg.norm(pq)
-
-    stress = (mag-di) * (pq/mag)
-    stress *= we*step
-
-
-    repulsion = -t*(pq/(mag **2)) * (1-we)
-
-    m = (1/l_sum) * stress + (t/l_sum) * repulsion
-
-    return v-m, u+m
-
-@jit(nopython=True)
-def old_satisfy(v,u,di,we,step,t=1,count=0,max_change=0,mom=0):
-
-    wc = step
-    pq = v-u #Vector between points
-    #mag = geodesic(self.X[i],self.X[j])
-    mag = np.linalg.norm(pq)
-    #r = (mag-self.d[i][j])/2 #min distance to satisfy constraint
-    wc = (1/pow(di,2))*step
-
-    # if we < 0.9 and random.random()<0.1:
-    #     r = (mag-10*self.d_max)/2
-    #     wc = step
-    # elif we > 0.9:
-    r = (mag-(di))/2
-
-    if wc > 1:
-        wc = 1
-    r = wc*r
-    m = (pq*r) /mag
-
-
-    #m = 0.8 * mom + 0.2*m
-
-
-    new_mag = np.linalg.norm((v-m)-(u+m))
-    max_change = max(max_change,abs(mag-new_mag))
-
-    return v-m, u+m, max_change
-
-@jit(nopython=True)
-def get_stress(X,d):
-    n, stress = len(X),0
-    for i in range(n):
-        for j in range(i):
-            stress += pow(d[i][j] - np.linalg.norm(X[i]-X[j]),2) / pow(d[i][j],2)
-
-    return stress
-
-@jit(nopython=True)
-def solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False,t=1):
-    step = 400
-    shuffle = random.shuffle
-    shuffle(indices)
-    max_change=0
-
-
-    for count in range(num_iter):
-        max_change = 0
-        for i,j in indices:
-            X[i],X[j] = satisfy(X[i],X[j],d[i][j],w[i][j],step,t=t,count=count)
-
-        step = schedule[min(count,len(schedule)-1)]
-        #t = 0 if count < 10 else 0.6
-        shuffle(indices)
-
-
-    return X
-
-
-
-@jit(nopython=True)
-def calc_cost(X,d,w,t):
-    cost, norm, n, l_sum = 0, np.linalg.norm, len(X), 1+t
-    for i in range(n):
-        for j in range(i):
-            pq = X[i]-X[j]
-            mag = norm(pq)
-            near = pow(mag-d[i][j],2) if w[i][j] >= 1 else 0
-            far = -np.log(mag) if w[i][j] < 1 else 0
-            cost += (1/l_sum) * near + (t/l_sum) * far
-    return cost
-
-@jit(nopython=True)
-def debug_solve(X,w,d,schedule,indices,num_iter=15,epsilon=1e-3,debug=False,t=1):
-    step = 1
-    shuffle = random.shuffle
-    shuffle(indices)
-    max_change = 0
-    n = len(X)
-    #schedule = np.array([1/(np.sqrt(count+10)) for count in range(num_iter)])
-
-
-    diam = np.max(d)
-    indiam = 1/diam
-    prev_cost = 80000
-
-    for count in range(num_iter):
-        t = (1)/(count + 1)
-        t = 0.6
-        for _ in range(20):
-            max_change = 0
-            for i,j in indices:
-                we = w[i][j] if w[i][j] == 1 else w[j][i]
-                before = np.linalg.norm(X[i]-X[j])
-                X[i],X[j] = satisfy(X[i],X[j],d[i][j],we,step,N=n,t=t)
-                after = np.linalg.norm(X[i]-X[j])
-                max_change = max(max_change, abs(after-before))
-            if max_change < 1e-5:
-                break
-
-        step = schedule[min(count,len(schedule)-1)]
-        step = 0.1
-
-        shuffle(indices)
-        cost = calc_cost(X,d,w,t)
-        print(cost)
-
-        if abs(prev_cost-cost) < epsilon:
-            break
-        prev_cost = cost
-
-
-        yield X.copy()
-
-    yield X.copy()
-    return X
-
 
 class SGD_d:
     def __init__(self,dissimilarities,k=5,weighted=True,w = np.array([]), init_pos=np.array([])):
@@ -233,7 +48,7 @@ class SGD_d:
         #sched = lambda count: 1/np.sqrt(count+1)
         return np.array([sched(count) for count in range(100)])
 
-    def solve(self,num_iter=15,debug=False,t=1,radius=False, k=1,tol=1e-8):
+    def solve(self,num_iter=1500,debug=False,t=1,radius=False, k=1,tol=1e-8):
         import autograd.numpy as np
         from autograd import grad
         from sklearn.metrics import pairwise_distances
@@ -243,7 +58,7 @@ class SGD_d:
         X = self.X
         N = len(X)
 
-        sizes = np.zeros(num_iter)
+        sizes = np.zeros(num_iter+1)
         movement = lambda X,X_c,step: np.sum(np.sum(X_c ** 2, axis=1) ** 0.5) / (N * step * np.max(np.max(X, axis=0) - np.min(X, axis=0)))
 
         eps = 1e-13
@@ -266,8 +81,8 @@ class SGD_d:
         step,change,momentum = 0.001, 0.0, 0.5
         grad_stress = grad(stress)
         print(stress(X,t))
-        t = 0.1
-        for epoch in range(num_iter):
+        t = 0.6
+        for epoch in range(num_iter+1):
 
             x_prime = grad_stress(X,t)
 
@@ -282,7 +97,7 @@ class SGD_d:
 
             if epoch > 40:
                 max_change = sizes[epoch - 40 : epoch].max()
-                print("Max change over last 40 epochs: {}".format(max_change),end='\r')
+                print("Epoch: {} . Max change over last 40 epochs: {}".format(epoch,round(max_change,5)),end='\r')
                 if max_change < tol: break
 
             #print(stress(X,t))

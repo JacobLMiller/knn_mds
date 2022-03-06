@@ -94,9 +94,9 @@ def k_curve(graph,radius=False, n=5):
 
     diam = np.max(d)
     CC,_ = gt.global_clustering(G)
-    a = 5
+    a = 3
 
-    K = np.linspace(5,100,12) if not radius else np.array([1,2,3,4,5,6,7])
+    K = np.linspace(10,100,4) if not radius else np.array([1,2,3,4,5,6,7])
     stress,NP = np.zeros(K.shape), np.zeros(K.shape)
     for _ in range(n):
         for i in range(len(K)):
@@ -132,7 +132,7 @@ def draw_hist(G,Xs,d,w,Y):
 
 
     for count in range(len(Xs)-1):
-        if count % 100 == 0 or count < 100:
+        if count % 100 == 0: #or count < 100:
             draw( G,Xs[count],output="drawings/update/test_{}.png".format(count) )
             NP.append(get_neighborhood(Xs[count],d))
             cost.append( get_cost( Xs[count], d, w, 0.6 ) )
@@ -164,7 +164,7 @@ def drive(graph,hist=False,radius=False):
 
 
     Y = SGD_d(d,weighted=True, w = w)
-    X = Y.solve(2000)
+    X = Y.solve(5000)
     X = [x for x in X]
     if hist:
         draw_hist(G,X,d,w,Y)
@@ -172,5 +172,5 @@ def drive(graph,hist=False,radius=False):
         draw(G,X)
 
 
-drive('powerlaw400',hist=True,radius=False)
-# k_curve('powerlaw300',radius=False)
+#drive('powerlaw200',hist=True,radius=False)
+k_curve('powerlaw300',radius=False,n=3)
