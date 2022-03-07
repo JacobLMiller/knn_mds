@@ -196,9 +196,9 @@ def main(n=5):
             for metric in ['NP','stress']:
                 graph_dict[graph][alg][metric] /= n
 
-        with open('data/random_graphs1.pkl','wb') as myfile:
-            pickle.dump(graph_dict,myfile)
-        myfile.close()
+    with open('data/random_graphs1.pkl','wb') as myfile:
+        pickle.dump(graph_dict,myfile)
+    myfile.close()
 
 
 if __name__ == "__main__":

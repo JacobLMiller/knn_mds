@@ -16,7 +16,7 @@ import random
 
 
 def display_stats(graph):
-    G = gt.load_graph('graphs/{}.dot'.format(graph))
+    G = gt.load_graph('random_runs/{}.dot'.format(graph))
     d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
 
     print(graph)
@@ -110,62 +110,5 @@ def pajTOgt(filepath, directed = False, removeloops = True):
 
     return g
 
-import autograd.numpy as np
-from autograd import grad
-
-
-d = np.array( [
-                [0,1,np.sqrt(2)],
-                [1,0,1],
-                [np.sqrt(2),1,0]
-            ] , dtype='float64')
-def tanh(x,t):                 # Define a function
-    stress = 0
-    for i in range(len(x)):
-        for j in range(i):
-            stress += t*pow(np.linalg.norm(x[i]-x[j]) - d[i][j],2)
-    return stress
-grad_tanh = grad(tanh)
-print(grad_tanh(np.array([
-                        [0,2],
-                        [1,1],
-                        [1,0]
-                        ]), 0.6))
-
-A = np.array([          [0,1],
-                        [1,1],
-                        [1,0]
-                        ],dtype='float64')
-
-def euclidean_var(X):
-    N = X.shape[0]
-    ss = (X * X).sum(axis=1)
-    return np.sqrt(ss.reshape((N, 1)) + ss.reshape((1, N)) - 2 * X.dot(X.T))
-
-w = np.ones(d.shape,dtype='float64')
-nplog = np.log
-log = lambda v: nplog(v,out=np.zeros_like(v),where=(v != 0))
-
-eps = 1e-13
-def stress(X,t):                 # Define a function
-    stress, l_sum = 0, 1+t
-    N = len(X)
-
-    #Stress
-    ss = (X * X).sum(axis=1)
-    diff = ss.reshape((N, 1)) + ss.reshape((1, N)) - 2 * np.dot(X,X.T)
-    diff = np.sqrt(diff+eps)
-    stress = np.sum( w * np.square(d-diff) )
-
-    #repulsion
-    r = -np.sum( np.log(diff+eps) )
-
-    return (1/l_sum) *np.sum(stress) + (t/l_sum) * r
-
-
-grad_stress = grad(stress)
-
-print(stress(A,0.6) )
-print(grad_stress(A,0.6))
-
-#FD = (stress(A+0.001,0.6) + stress(A-0.001,0.6)) / 0.002
+display_stats("connected_watts_300")
+display_stats("powerlaw300")

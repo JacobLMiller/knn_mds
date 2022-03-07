@@ -120,6 +120,39 @@ def k_curve(graph,radius=False, n=5):
     plt.clf()
     print()
 
+def a_curve(graph,radius=False, n=5):
+    print(graph)
+
+    G = gt.load_graph("graphs/{}.dot".format(graph))
+    d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
+    d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
+
+    diam = np.max(d)
+    CC,_ = gt.global_clustering(G)
+
+    A = np.array([1,2,3,4,5,6,7,8])
+    stress,NP = np.zeros(A.shape), np.zeros(A.shape)
+    for _ in range(n):
+        for i in range(len(A)):
+            a = A[i]
+            X,w = layout(G,d,d_norm,debug=True,k=22,a=a,radius=radius)
+            draw(G,X[-1],output='drawings/{}_a{}.png'.format(graph,a))
+
+            stress[i] += get_stress(X[-1],d_norm)
+            NP[i] += (get_neighborhood(X[-1],d))
+    stress = stress/n
+    NP = NP/n
+
+
+    plt.plot(A.astype(int), stress, label="Stress")
+    plt.plot(A.astype(int), NP, label="NP")
+    plt.suptitle(graph)
+    plt.xlabel("a")
+    plt.legend()
+    plt.savefig('figures/acurve_{}.png'.format(graph))
+    plt.clf()
+    print()
+
 def layout_directory():
     import os
     graph_paths = os.listdir('new_tests/')
@@ -152,9 +185,13 @@ def draw_hist(G,Xs,d,w,Y):
 
 
 def drive(graph,hist=False,radius=False):
-    G = gt.load_graph("random_runs/{}.dot".format(graph))
+    G = gt.load_graph("graphs/{}.dot".format(graph))
     d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
     d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
+
+    Y = SGD_MDS(d)
+    X = Y.solve()
+    draw(G,X)
 
     K = np.linspace( 5,G.num_vertices()-1, 8)
 
@@ -172,5 +209,5 @@ def drive(graph,hist=False,radius=False):
         draw(G,X)
 
 
-#drive('powerlaw200',hist=True,radius=False)
-k_curve('powerlaw300',radius=False,n=3)
+#drive('test_mnist',hist=True,radius=False)
+a_curve('test_mnist',radius=False,n=3)

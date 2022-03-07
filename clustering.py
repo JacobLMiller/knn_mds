@@ -102,25 +102,27 @@ graph_paths = os.listdir('graphs/')
 #     print("Graph: {}, CC: {}".format(graph, gt.vertex_average(G,clust)) )
 
 
-for n in [200]:
-    print(n)
-    bad = True
-    while bad:
-        k = random.randint(2,30)
-        p = random.random()
-        print("K: {}, p: {}".format(k,p))
-        #G = convert_graph( nx.Graph(nx.connected_watts_strogatz_graph(n, k, random.random()) ))
-        #G = custom_cluster(n=n,k=k)
-        G = convert_graph( nx.Graph( nx.powerlaw_cluster_graph(n,k,p=p) ) )
-        clust = gt.local_clustering(G)
-        CC,_ = gt.vertex_average(G,clust)
-        print(CC)
-        if CC > 0.6:
-            G.save('random_runs/powerlaw{}.dot'.format(n))
-            bad = False
+# for n in [200]:
+#     print(n)
+#     bad = True
+#     while bad:
+#         k = random.randint(2,30)
+#         p = random.random()
+#         print("K: {}, p: {}".format(k,p))
+#         #G = convert_graph( nx.Graph(nx.connected_watts_strogatz_graph(n, k, random.random()) ))
+#         #G = custom_cluster(n=n,k=k)
+#         G = convert_graph( nx.Graph( nx.powerlaw_cluster_graph(n,k,p=p) ) )
+#         clust = gt.local_clustering(G)
+#         CC,_ = gt.vertex_average(G,clust)
+#         print(CC)
+#         if CC > 0.6:
+#             G.save('random_runs/powerlaw{}.dot'.format(n))
+#             bad = False
 
-G = gt.load_graph('graphs/airlines.dot')
-print(G.properties)
-ID = G.vertex_properties['id']
-for v in G.vertices():
-    ID[v] = ID[v].split('.')[0]
+G = gt.load_graph('random_runs/powerlaw300.dot')
+clust = gt.local_clustering(G)
+print("Graph: {}, CC: {}".format("powerlaw300", gt.vertex_average(G,clust)) )
+
+G = gt.load_graph('random_runs/connected_watts_300.dot')
+clust = gt.local_clustering(G)
+print("Graph: {}, CC: {}".format("connected_watts_300", gt.vertex_average(G,clust)) )
