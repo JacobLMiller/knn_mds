@@ -14,6 +14,8 @@ from metrics import get_stress,get_neighborhood
 
 import matplotlib.pyplot as plt
 
+import gc
+
 def get_w(G,k=5,a=5):
     A = gt.adjacency(G).toarray()
     mp = np.linalg.matrix_power
@@ -48,28 +50,19 @@ def draw(G,X,output=None):
 
 def calc_adj(graph,G,d,d_norm):
     NP,stress = [],[]
-    K = np.linspace( 5,100, 12)
+    K = np.linspace( 5,100, 8)
     a = 3 if graph[0] == 'p' else 5
     for k in K:
-        k = int(k)
+        k = int(k) if k < G.num_vertices() else G.num_vertices()-1
         w = get_w(G,k=k,a=a)
         Y = SGD_d(d,w=w,weighted=True)
-        sol = [x for x in Y.solve(1500,debug=True,radius=False)]
-        Xs = sol[-1]
-        X = layout_io.normalize_layout(Xs)
+        X = Y.solve(5000,radius=False)
+        X = layout_io.normalize_layout(X)
         stress.append(get_stress(X,d_norm))
         NP.append(get_neighborhood(X,d))
 
         draw(G,X,output='drawings/random_graphs/adjacency_power/{}_k{}.png'.format(graph,k))
 
-
-    plt.plot(K, stress, label="Stress")
-    plt.plot(K, NP, label="NP")
-    plt.suptitle(graph)
-    plt.xlabel("k")
-    plt.legend()
-    plt.savefig('figures/adjacency_kcurve_{}.png'.format(graph))
-    plt.clf()
 
     return np.array(NP),np.array(stress)
 
@@ -88,19 +81,12 @@ def calc_radius(graph,G,d,d_norm):
         draw(G,X,output='drawings/random_graphs/radius/{}_k{}.png'.format(graph,k))
 
 
-    plt.plot(K, stress, label="Stress")
-    plt.plot(K, NP, label="NP")
-    plt.suptitle(graph)
-    plt.xlabel("k")
-    plt.legend()
-    plt.savefig('figures/radius_kcurve_{}.png'.format(graph))
-    plt.clf()
 
     return np.array(NP),np.array(stress)
 
 def calc_linear(graph,G,d,d_norm):
     NP,stress = [],[]
-    A = np.linspace(0,1,12)
+    A = np.linspace(0,1,8)
     for a in A:
 
         n = 1500
@@ -133,27 +119,20 @@ def calc_linear(graph,G,d,d_norm):
         draw(G,X,output='drawings/random_graphs/linear_comb/{}_a{}.png'.format(graph,a))
 
 
-    plt.plot(A, stress, label="Stress")
-    plt.plot(A, NP, label="NP")
-    plt.suptitle(graph)
-    plt.xlabel("a")
-    plt.legend()
-    plt.savefig('figures/linear_kcurve_{}.png'.format(graph))
-    plt.clf()
-
     return np.array(NP),np.array(stress)
 
 
 
-def main(n=5):
+def experiment(n=5):
     import os
     import pickle
     import copy
 
-    path = 'random_runs/'
+    path = 'tsnet-graphs/'
     graph_paths = os.listdir(path)
 
     graph_paths = list( map(lambda s: s.split('.')[0], graph_paths) )
+    #graph_paths = ['custom_cluster_100']
     print(graph_paths)
 
     adjacency_len = len( np.linspace(5,100,8) )
@@ -161,10 +140,8 @@ def main(n=5):
     linear_len = len( np.linspace(0,1,8) )
 
     zeros = lambda s: np.zeros(s)
-    alg_dict = {'adjacency_power': {'NP': zeros(adjacency_len), 'stress': zeros(adjacency_len)},
-                'radius': {'NP': zeros(radius_len), 'stress': zeros(radius_len)},
-                'linear': {'NP': zeros(linear_len), 'stress': zeros(linear_len)}
-                }
+    alg_dict = {'NP': zeros(adjacency_len), 'stress': zeros(adjacency_len)}
+                
 
     graph_dict = {key: copy.deepcopy(alg_dict) for key in graph_paths}
 
@@ -173,7 +150,7 @@ def main(n=5):
         G = gt.load_graph(path+graph + '.dot')
         d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
         d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
-        #if G.num_vertices() > 999: continue
+        if G.num_vertices() > 999: continue
 
         CC,_ = gt.global_clustering(G)
         a = 2 if CC < 0.1 else 3 if CC < 0.4 else 4 if CC < 0.6 else 5
@@ -182,24 +159,87 @@ def main(n=5):
         print("-----------------------------------------------------------")
 
         for i in range(n):
+            print()
             print("Iteration number ", i)
 
             NP,stress = calc_adj(graph,G,d,d_norm)
-            graph_dict[graph]['adjacency_power']['NP'] += NP
-            graph_dict[graph]['adjacency_power']['stress'] += stress
+            graph_dict[graph]['NP'] += NP
+            graph_dict[graph]['stress'] += stress
 
-            NP,stress = calc_linear(graph,G,d,d_norm)
-            graph_dict[graph]['linear']['NP'] += NP
-            graph_dict[graph]['linear']['stress'] += stress
 
-        for alg in alg_dict.keys():
-            for metric in ['NP','stress']:
-                graph_dict[graph][alg][metric] /= n
+        graph_dict[graph]['NP'] /= n
+        graph_dict[graph]['stress'] /= n  
+                
+        K = np.linspace( 5,100, 8)
+        plt.plot(K, graph_dict[graph]['stress'], label="Stress")
+        plt.plot(K, graph_dict[graph]['NP'], label="NP")
+        plt.suptitle(graph)
+        plt.xlabel("k")
+        plt.legend()
+        plt.savefig('figures/adjacency_kcurve_{}.png'.format(graph))
+        plt.clf()
+        
 
-    with open('data/random_graphs1.pkl','wb') as myfile:
+  
+        print()
+        print()
+
+    with open('data/tsnet_graphs.pkl','wb') as myfile:
         pickle.dump(graph_dict,myfile)
     myfile.close()
 
 
-if __name__ == "__main__":
-    main(n=30)
+import sys
+import logging
+
+from pathlib import Path
+
+LOG_FILE_PATH = "/tmp"
+LOG_FILE_NAME = "myapp.log"
+
+
+# set up logger
+logger = logging.getLogger(__name__)
+
+
+def main(n=5):
+
+    # the logger shall emit all messages regardless of severity
+    logger.setLevel(logging.DEBUG)
+
+    # console handler: show DEBUG messages (and higher)
+    stdout_handler = logging.StreamHandler(sys.stdout)
+    stdout_handler.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    stdout_handler.setFormatter(formatter)
+    logger.addHandler(stdout_handler)
+
+    # file handler, show all messages (level DEBUG and higher)
+    log_file = Path(LOG_FILE_PATH) / LOG_FILE_NAME
+
+    file_handler = logging.FileHandler(filename=log_file)
+    file_handler.setLevel(logging.DEBUG)
+    formatter = logging.Formatter(
+        '%(asctime)s\t%(filename)s\t%(lineno)s\t%(name)s\t%(funcName)s\t%(levelname)s\t%(message)s')
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+
+    logger.info("Starting program")
+    logger.debug(f"Using log file: {log_file}")
+    
+    experiment(n=n)
+    
+try:
+    if __name__ == '__main__':
+        main(n=5)
+
+except KeyboardInterrupt:
+    logger.warning("Shutdown requested (KeyboardInterrupt)...")
+    sys.exit(0)
+
+except Exception:
+    logger.error("Exception", exc_info=True)
+    sys.exit(1)
+
+finally:
+    logger.debug("Running finally")    

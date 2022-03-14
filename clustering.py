@@ -126,3 +126,7 @@ print("Graph: {}, CC: {}".format("powerlaw300", gt.vertex_average(G,clust)) )
 G = gt.load_graph('random_runs/connected_watts_300.dot')
 clust = gt.local_clustering(G)
 print("Graph: {}, CC: {}".format("connected_watts_300", gt.vertex_average(G,clust)) )
+
+import gc
+
+print(gc.garbage)

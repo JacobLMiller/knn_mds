@@ -57,6 +57,9 @@ class SGD_d:
         w = 0.5* np.copy(self.w) if not radius else 0.5*np.copy((self.d <= k).astype('int'))
         X = self.X
         N = len(X)
+        
+        if debug:
+            hist = [np.ones(X.shape) for count in range(num_iter+1)]
 
         sizes = np.zeros(num_iter+1)
         movement = lambda X,X_c,step: np.sum(np.sum(X_c ** 2, axis=1) ** 0.5) / (N * step * np.max(np.max(X, axis=0) - np.min(X, axis=0)))
@@ -80,8 +83,8 @@ class SGD_d:
 
         step,change,momentum = 0.001, 0.0, 0.5
         grad_stress = grad(stress)
-        print(stress(X,t))
-        t = 0.6
+
+        #t = 0.6
         for epoch in range(num_iter+1):
 
             x_prime = grad_stress(X,t)
@@ -101,28 +104,16 @@ class SGD_d:
                 if max_change < tol: break
 
             #print(stress(X,t))
-            self.X = X
-            yield X.copy()
+            #self.X = X
+            if debug:
+                hist[epoch] = X.copy()
         self.X = X
+        print()
+        if debug:
+            return hist
         return X.copy()
 
 
-    def calc_distortion(self,X,d):
-        distortion = 0
-        for i in range(self.n):
-            for j in range(i):
-                distortion += abs((norm(X[i]-X[j])-d[i][j]))/d[i][j]
-        return (1/choose(self.n,2))*distortion
-
-    def calc_gradient(self,i,j):
-        X0 = tf.Variable(self.X)
-        with tf.GradientTape() as tape:
-            Y = self.calc_stress(X0)
-        dy_dx = tape.gradient(Y,X0).numpy()
-        #dy = dy_dx.numpy()
-        for i in range(len(self.d)):
-            dy_dx[i] = normalize(dy_dx[i])
-        return dy_dx
 
     def compute_step_size(self,count,num_iter):
         return 1/pow(5+count,1)
@@ -133,11 +124,6 @@ class SGD_d:
 
     def init_point(self):
         return [random.uniform(-1,1),random.uniform(-1,1)]
-
-
-def normalize(v):
-    mag = pow(v[0]*v[0]+v[1]*v[1],0.5)
-    return v/mag
 
 
 def choose(n,k):
@@ -183,53 +169,4 @@ def set_w(d,k):
 
     return w
 
-def get_neighborhood(X,d,rg = 1):
-    """
-    How well do the local neighborhoods represent the theoretical neighborhoods?
-    Closer to 1 is better.
-    Measure of percision: ratio of true positives to true positives+false positives
-    """
-    def get_k_embedded(X,k_t):
-        dist_mat = [[norm(X[i]-X[j]) if i != j else 10000 for j in range(len(X))] for i in range(len(X))]
-        return [np.argpartition(dist_mat[i],len(k_t[i]))[:len(k_t[i])] for i in range(len(dist_mat))]
 
-    k_theory = [np.where((d[i] <= rg) & (d[i] > 0))[0] for i in range(len(d))]
-    k_embedded = get_k_embedded(X,k_theory)
-
-    sum = 0
-    for i in range(len(X)):
-        count_intersect = 0
-        for j in range(len(k_theory[i])):
-            if k_theory[i][j] in k_embedded[i]:
-                count_intersect += 1
-        sum += count_intersect/(len(k_theory[i])+len(k_embedded[i])-count_intersect)
-
-    return sum/len(X)
-
-def get_k_nearest(d_row,k):
-    return np.argpartition(d_row,k)[:k]
-
-
-def k_nearest_embedded(X,k_theory):
-    sum = 0
-    dist_mat = np.zeros([len(X),len(X)])
-    for i in range(len(X)):
-        for j in range(len(X)):
-            if i != j:
-                dist_mat[i][j] = euclid_dist(X[i],X[j])
-            else:
-                dist_mat[i][j] = 100000
-    k_embedded = [np.zeros(k_theory[i].shape) for i in range(len(k_theory))]
-
-    for i in range(len(dist_mat)):
-        k = len(k_theory[i])
-        k_embedded[i] = np.argpartition(dist_mat[i],k)[:k]
-
-    for i in range(len(X)):
-        count_intersect = 0
-        count_union = 0
-        for j in range(len(k_theory[i])):
-            if k_theory[i][j] in k_embedded[i]:
-                count_intersect += 1
-        sum += count_intersect/(len(k_theory[i])+len(k_embedded[i])-count_intersect)
-    return sum/len(X)

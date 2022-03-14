@@ -35,21 +35,16 @@ def get_w(G,k=5,a=5):
                 w[i][j] = 1
                 w[j][i] = 1
 
-    print(w)
     return w
 
-def layout(G,d,d_norm,debug=True, k=7, a=5,radius=False):
+def layout(G,d,d_norm,debug=True, k=7, a=5,t=0.6,radius=False):
     k = k if k < G.num_vertices() else G.num_vertices()
     w = get_w(G,k=k,a=a)
     Y = SGD_d(d,weighted=True,w=w)
-    Xs = [x for x in Y.solve(1500,debug=debug,radius=radius)]
+    Xs = Y.solve(5000,debug=debug,radius=radius,t=t)
+    X = layout_io.normalize_layout(Xs)
 
-    if debug:
-        Xs = [layout_io.normalize_layout(X) for X in Xs]
-        print("Local SGD: Stress: {}, NP: {}".format(get_norm_stress(Xs[-1],d_norm),get_neighborhood(Xs[-1],d)))
-        return Xs,w
-    else:
-        return Xs
+    return X,w
 
 
 def draw(G,X,output=None):
@@ -85,10 +80,10 @@ def stress_curve():
     plt.legend()
     plt.show()
 
-def k_curve(graph,radius=False, n=5):
+def k_curve(graph,radius=False, n=5,folder='graphs/'):
     print(graph)
 
-    G = gt.load_graph("random_runs/{}.dot".format(graph))
+    G = gt.load_graph("{}{}.dot".format(folder,graph))
     d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
     d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
 
@@ -96,17 +91,17 @@ def k_curve(graph,radius=False, n=5):
     CC,_ = gt.global_clustering(G)
     a = 3
 
-    K = np.linspace(10,100,4) if not radius else np.array([1,2,3,4,5,6,7])
+    K = np.linspace(10,100,10) if not radius else np.array([1,2,3,4,5,6,7])
     stress,NP = np.zeros(K.shape), np.zeros(K.shape)
     for _ in range(n):
         for i in range(len(K)):
 
             k = int(K[i])
-            X,w = layout(G,d,d_norm,debug=True,k=k,a=a,radius=radius)
-            draw(G,X[-1],output='drawings/{}_k{}.png'.format(graph,k))
+            X,w = layout(G,d,d_norm,debug=False,k=k,a=a,radius=radius)
+            draw(G,X,output='drawings/{}_k{}.png'.format(graph,k))
 
-            stress[i] += get_stress(X[-1],d_norm)
-            NP[i] += (get_neighborhood(X[-1],d))
+            stress[i] += get_stress(X,d_norm)
+            NP[i] += (get_neighborhood(X,d))
     stress = stress/n
     NP = NP/n
 
@@ -152,6 +147,40 @@ def a_curve(graph,radius=False, n=5):
     plt.savefig('figures/acurve_{}.png'.format(graph))
     plt.clf()
     print()
+    
+
+def t_curve(graph,radius=False, n=5):
+    print(graph)
+
+    G = gt.load_graph("random_runs/{}.dot".format(graph))
+    d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
+    d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
+
+    diam = np.max(d)
+    CC,_ = gt.global_clustering(G)
+
+    A = np.linspace(0,1,8)
+    stress,NP = np.zeros(A.shape), np.zeros(A.shape)
+    for _ in range(n):
+        for i in range(len(A)):
+            t = A[i]
+            X,w = layout(G,d,d_norm,debug=True,k=22,a=3,t=t,radius=radius)
+            draw(G,X[-1],output='drawings/{}_t{}.png'.format(graph,t))
+
+            stress[i] += get_stress(X[-1],d_norm)
+            NP[i] += (get_neighborhood(X[-1],d))
+    stress = stress/n
+    NP = NP/n
+
+
+    plt.plot(A.astype(int), stress, label="Stress")
+    plt.plot(A.astype(int), NP, label="NP")
+    plt.suptitle(graph)
+    plt.xlabel("t")
+    plt.legend()
+    plt.savefig('figures/tcurve_{}.png'.format(graph))
+    plt.clf()
+    print()    
 
 def layout_directory():
     import os
@@ -185,13 +214,13 @@ def draw_hist(G,Xs,d,w,Y):
 
 
 def drive(graph,hist=False,radius=False):
-    G = gt.load_graph("graphs/{}.dot".format(graph))
+    G = gt.load_graph("{}.dot".format(graph))
     d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
     d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
 
     Y = SGD_MDS(d)
     X = Y.solve()
-    draw(G,X)
+    draw(G,X,output='full_cw200.png')
 
     K = np.linspace( 5,G.num_vertices()-1, 8)
 
@@ -201,13 +230,15 @@ def drive(graph,hist=False,radius=False):
 
 
     Y = SGD_d(d,weighted=True, w = w)
-    X = Y.solve(5000)
-    X = [x for x in X]
+    X = Y.solve(5000,debug=hist)
+    #X = [x for x in X]
     if hist:
         draw_hist(G,X,d,w,Y)
     else:
         draw(G,X)
 
 
-#drive('test_mnist',hist=True,radius=False)
-a_curve('test_mnist',radius=False,n=3)
+drive('random_runs/connected_watts_200',hist=True,radius=False)
+#k_curve('connected_watts_200',folder='random_runs/',radius=False,n=5)
+#a_curve('test_mnist',radius=False,n=3)
+#t_curve('custom_cluster_300',radius=False,n=3)
