@@ -57,7 +57,7 @@ class SGD_d:
         w = 0.5* np.copy(self.w) if not radius else 0.5*np.copy((self.d <= k).astype('int'))
         X = self.X
         N = len(X)
-        
+
         if debug:
             hist = [np.ones(X.shape) for count in range(num_iter+1)]
 
@@ -83,6 +83,7 @@ class SGD_d:
 
         step,change,momentum = 0.001, 0.0, 0.5
         grad_stress = grad(stress)
+        cost = 0
 
         #t = 0.6
         for epoch in range(num_iter+1):
@@ -100,8 +101,11 @@ class SGD_d:
 
             if epoch > 40:
                 max_change = sizes[epoch - 40 : epoch].max()
-                print("Epoch: {} . Max change over last 40 epochs: {}".format(epoch,round(max_change,5)),end='\r')
+                cost = stress(X,t)
+                print("Epoch: {} . Cost value: {} . Max change over last 40 epochs: {}".format(epoch,int(cost),round(max_change,5)),end='\r')
                 if max_change < tol: break
+                # if epoch % 101 == 0:
+                #     if stress(X,t) < -70000: break
 
             #print(stress(X,t))
             #self.X = X
@@ -168,5 +172,3 @@ def set_w(d,k):
                 w[j][i] = 1
 
     return w
-
-

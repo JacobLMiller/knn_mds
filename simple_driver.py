@@ -147,7 +147,7 @@ def a_curve(graph,radius=False, n=5):
     plt.savefig('figures/acurve_{}.png'.format(graph))
     plt.clf()
     print()
-    
+
 
 def t_curve(graph,radius=False, n=5):
     print(graph)
@@ -180,7 +180,7 @@ def t_curve(graph,radius=False, n=5):
     plt.legend()
     plt.savefig('figures/tcurve_{}.png'.format(graph))
     plt.clf()
-    print()    
+    print()
 
 def layout_directory():
     import os
@@ -238,7 +238,7 @@ def drive(graph,hist=False,radius=False):
         draw(G,X)
 
 
-drive('random_runs/connected_watts_200',hist=True,radius=False)
-#k_curve('connected_watts_200',folder='random_runs/',radius=False,n=5)
+drive('graphs/block_400',hist=True,radius=False)
+#k_curve('block_400',folder='graphs/',radius=False,n=5)
 #a_curve('test_mnist',radius=False,n=3)
 #t_curve('custom_cluster_300',radius=False,n=3)
