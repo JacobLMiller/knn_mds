@@ -77,6 +77,12 @@ class SGD_d:
             stress = np.sum( w * np.square(d-diff) )
 
             #repulsion
+            diff = diff + eps
+
+            # condlist = [diff<10, diff>=10]
+            # choicelist = [np.log(diff), 0]
+            # r = np.select(condlist, choicelist, 0)
+            # r = -np.sum( r )
             r = -np.sum( np.log(diff+eps) )
 
             return (1/l_sum) * np.sum(stress) + (t/l_sum) * r

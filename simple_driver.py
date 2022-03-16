@@ -1,4 +1,4 @@
-from SGD_MDS2 import SGD_MDS2
+from SGD_MDS2 import SGD
 from SGD_MDS import SGD_MDS
 
 import modules.distance_matrix as distance_matrix
@@ -194,7 +194,7 @@ def draw_hist(G,Xs,d,w,Y):
 
 
     for count in range(len(Xs)-1):
-        if count % 100 == 0: #or count < 100:
+        if count % 1 == 0: #or count < 100:
             draw( G,Xs[count],output="drawings/update/test_{}.png".format(count) )
             NP.append(get_neighborhood(Xs[count],d))
             cost.append( get_cost( Xs[count], d, w, 0.6 ) )
@@ -218,9 +218,9 @@ def drive(graph,hist=False,radius=False):
     d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
     d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
 
-    Y = SGD_MDS(d)
-    X = Y.solve()
-    draw(G,X,output='full_cw200.png')
+    # Y = SGD_MDS(d)
+    # X = Y.solve()
+    # draw(G,X,output='full_cw200.png')
 
     K = np.linspace( 5,G.num_vertices()-1, 8)
 
@@ -229,8 +229,8 @@ def drive(graph,hist=False,radius=False):
     w = w if not radius else (d <= k).astype('int')
 
 
-    Y = SGD_d(d,weighted=True, w = w)
-    X = Y.solve(5000,debug=hist)
+    Y = SGD(d,weighted=True, w = w)
+    X = Y.solve(15,debug=hist)
     #X = [x for x in X]
     if hist:
         draw_hist(G,X,d,w,Y)
@@ -238,7 +238,7 @@ def drive(graph,hist=False,radius=False):
         draw(G,X)
 
 
-drive('graphs/block_400',hist=True,radius=False)
-#k_curve('block_400',folder='graphs/',radius=False,n=5)
+drive('graphs/10square',hist=True,radius=False)
+#k_curve('airlines',folder='graphs/',radius=False,n=5)
 #a_curve('test_mnist',radius=False,n=3)
 #t_curve('custom_cluster_300',radius=False,n=3)
