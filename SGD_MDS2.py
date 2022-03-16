@@ -7,11 +7,44 @@ import itertools
 
 from numba import jit
 
+
 import math
 import random
 
 norm = lambda x: np.linalg.norm(x,ord=2)
 
+@jit
+def norm_grad(x):
+    return x/norm(x)
+
+@jit(nopython=True)
+def grad_stress(u,v,t,dij,wij,diam):
+    pq = u-v
+    mag = np.linalg.norm(pq)
+    mag_grad = pq/mag
+
+    stress = wij * 2 * (mag-dij) * mag_grad
+
+    repulsion = -(1/mag) * mag_grad
+    if mag > 3*diam:
+        repulsion *= 1
+
+    l_sum = 1+t
+    return (1/l_sum) * stress + (t/l_sum) * repulsion
+
+
+@jit(nopython=True)
+def iteration(X,w,d,indices,t,step):
+    max_change = 0
+    diam = np.max(d)
+    for i,j in indices:
+        old = np.linalg.norm(X[i]-X[j])
+        change = grad_stress(X[i],X[j],t,d[i][j],w[i][j],diam)
+        X[i] = X[i] - step * change
+        X[j] = X[j] + step * change
+        new = np.linalg.norm(X[i]-X[j])
+        max_change = max(max_change, abs(new-old))
+    return X,max_change
 
 class SGD:
     def __init__(self,dissimilarities,k=5,weighted=True,w = np.array([]), init_pos=np.array([])):
@@ -49,7 +82,7 @@ class SGD:
         return np.array([sched(count) for count in range(100)])
 
     def solve(self,num_iter=1500,debug=False,t=1,radius=False, k=1,tol=1e-8):
-        import autograd.numpy as np
+        #import autograd.numpy as np
         from autograd import grad
         from sklearn.metrics import pairwise_distances
         import itertools
@@ -57,7 +90,7 @@ class SGD:
         indices = np.array(list(itertools.combinations(range(self.n), 2)))
 
         d = self.d
-        w = 0.5* np.copy(self.w) if not radius else 0.5*np.copy((self.d <= k).astype('int'))
+        w = self.w
         X = self.X
         N = len(X)
 
@@ -69,25 +102,40 @@ class SGD:
 
         eps = 1e-13
         epsilon = np.ones(d.shape)*eps
-        def pair_stress(v,u,t,dij,wij):                 # Define a function
+        def stress(X,t):                 # Define a function
             stress, l_sum = 0, 1+t
 
-            mag = np.linalg.norm(v-u)
-            return (1/l_sum) * (wij * np.square(mag-dij)) - (t/l_sum) * np.log(mag)
+
+            #Stress
+            ss = (X * X).sum(axis=1)
+            diff = ss.reshape((N, 1)) + ss.reshape((1, N)) - 2 * np.dot(X,X.T)
+            diff = np.sqrt(np.maximum(diff,epsilon))
+            stress = np.sum( w * np.square(d-diff) )
+
+            #repulsion
+            diff = diff + eps
+
+            # condlist = [diff<10, diff>=10]
+            # choicelist = [np.log(diff), 0]
+            # r = np.select(condlist, choicelist, 0)
+            # r = -np.sum( r )
+            r = -np.sum( np.log(diff+eps) )
+
+            return (1/l_sum) * np.sum(stress) + (t/l_sum) * r
 
         step,change,momentum = 0.001, 0.0, 0.5
-        grad_stress = grad(pair_stress)
+        #grad_stress = jit(grad(pair_stress))
         cost = 0
 
         #t = 0.6
         for epoch in range(num_iter+1):
-            step = self.compute_step_size(epoch,num_iter)
-            step = step if step < 1 else 1
+            step = 0.1/np.sqrt(epoch+1)
+            step = 0.001
+            #step = step if step < 0.5 else 0.5
 
-            for i,j in indices:
-                change = grad_stress(X[i],X[j],t,d[i][j],w[i][j])
-                X[i] -= step * change
-                X[j] += step * change
+
+            X,change = iteration(X,w,d,indices,t,step)
+
 
             # x_prime = grad_stress(X,t)
             #
@@ -96,14 +144,14 @@ class SGD:
             # X -= new_change
             #
             # if abs(new_change-change).max() < 1e-3: momentum = 0.8
-            # sizes[epoch] = movement(X,new_change,step)
+            sizes[epoch] = change
             #
             # change = new_change
 
-            if epoch > -1:
-                #max_change = sizes[epoch - 40 : epoch].max()
-                #cost = stress(X,t)
-                print("Epoch: {} . Cost value: {} . ".format(epoch,int(cost)),end='\r')
+            if epoch > 15:
+                max_change = sizes[epoch - 1 : epoch].max()
+                cost = stress(X,t)
+                print("Epoch: {} . Cost: {}. Max change over last 1: {} . ".format(epoch,int(cost),round(change,5),end='\r') )
                 #if max_change < tol: break
                 # if epoch % 101 == 0:
                 #     if stress(X,t) < -70000: break

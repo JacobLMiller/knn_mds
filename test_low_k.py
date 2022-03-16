@@ -50,7 +50,7 @@ def draw(G,X,output=None):
 
 def calc_adj(graph,G,d,d_norm):
     NP,stress = [],[]
-    K = np.linspace( 5,100, 8)
+    K = np.linspace( 10,100, 8)
     a = 3 if graph[0] == 'p' else 5
     for k in K:
         k = int(k) if k < G.num_vertices() else G.num_vertices()-1
@@ -128,7 +128,7 @@ def experiment(n=5):
     import pickle
     import copy
 
-    path = 'tsnet-graphs/'
+    path = 'random_runs/'
     graph_paths = os.listdir(path)
 
     graph_paths = list( map(lambda s: s.split('.')[0], graph_paths) )
@@ -141,7 +141,7 @@ def experiment(n=5):
 
     zeros = lambda s: np.zeros(s)
     alg_dict = {'NP': zeros(adjacency_len), 'stress': zeros(adjacency_len)}
-                
+
 
     graph_dict = {key: copy.deepcopy(alg_dict) for key in graph_paths}
 
@@ -150,7 +150,7 @@ def experiment(n=5):
         G = gt.load_graph(path+graph + '.dot')
         d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
         d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
-        if G.num_vertices() > 999: continue
+        #if G.num_vertices() > 999: continue
 
         CC,_ = gt.global_clustering(G)
         a = 2 if CC < 0.1 else 3 if CC < 0.4 else 4 if CC < 0.6 else 5
@@ -168,9 +168,9 @@ def experiment(n=5):
 
 
         graph_dict[graph]['NP'] /= n
-        graph_dict[graph]['stress'] /= n  
-                
-        K = np.linspace( 5,100, 8)
+        graph_dict[graph]['stress'] /= n
+
+        K = np.linspace( 10,100, 8)
         plt.plot(K, graph_dict[graph]['stress'], label="Stress")
         plt.plot(K, graph_dict[graph]['NP'], label="NP")
         plt.suptitle(graph)
@@ -178,13 +178,13 @@ def experiment(n=5):
         plt.legend()
         plt.savefig('figures/adjacency_kcurve_{}.png'.format(graph))
         plt.clf()
-        
 
-  
+
+
         print()
         print()
 
-    with open('data/tsnet_graphs.pkl','wb') as myfile:
+    with open('data/random_graphs2.pkl','wb') as myfile:
         pickle.dump(graph_dict,myfile)
     myfile.close()
 
@@ -226,9 +226,9 @@ def main(n=5):
 
     logger.info("Starting program")
     logger.debug(f"Using log file: {log_file}")
-    
+
     experiment(n=n)
-    
+
 try:
     if __name__ == '__main__':
         main(n=5)
@@ -242,4 +242,4 @@ except Exception:
     sys.exit(1)
 
 finally:
-    logger.debug("Running finally")    
+    logger.debug("Running finally")

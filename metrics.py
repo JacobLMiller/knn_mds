@@ -40,7 +40,7 @@ def get_cost(X,d,w,t):                 # Define a function
     #Stress
     ss = (X * X).sum(axis=1)
     diff = ss.reshape((N, 1)) + ss.reshape((1, N)) - 2 * np.dot(X,X.T)
-    diff = np.sqrt(diff+eps)
+    diff = np.sqrt(abs(diff+eps))
     stress = np.sum( w * np.square(d-diff) )
 
     #repulsion

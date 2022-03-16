@@ -28,7 +28,7 @@ def get_w(G,k=5,a=5):
 
     n = G.num_vertices()
     N = 0
-    w = np.asarray([[ 0 if i != j else 0 for i in range(len(A))] for j in range(len(A))])
+    w = np.asarray([[ 1e-9 if i != j else 0 for i in range(len(A))] for j in range(len(A))])
     for i in range(len(A)):
         for j in k_nearest[i]:
             if i != j:
@@ -194,7 +194,7 @@ def draw_hist(G,Xs,d,w,Y):
 
 
     for count in range(len(Xs)-1):
-        if count % 1 == 0: #or count < 100:
+        if count % 100 == 0: #or count < 100:
             draw( G,Xs[count],output="drawings/update/test_{}.png".format(count) )
             NP.append(get_neighborhood(Xs[count],d))
             cost.append( get_cost( Xs[count], d, w, 0.6 ) )
@@ -224,13 +224,13 @@ def drive(graph,hist=False,radius=False):
 
     K = np.linspace( 5,G.num_vertices()-1, 8)
 
-    w = get_w(G,k=10,a=5)
+    w = get_w(G,k=198,a=5)
     k=1
     w = w if not radius else (d <= k).astype('int')
 
 
     Y = SGD(d,weighted=True, w = w)
-    X = Y.solve(15,debug=hist)
+    X = Y.solve(5000,debug=hist,t=0)
     #X = [x for x in X]
     if hist:
         draw_hist(G,X,d,w,Y)
@@ -238,7 +238,7 @@ def drive(graph,hist=False,radius=False):
         draw(G,X)
 
 
-drive('graphs/10square',hist=True,radius=False)
+drive('random_runs/connected_watts_200',hist=True,radius=False)
 #k_curve('airlines',folder='graphs/',radius=False,n=5)
 #a_curve('test_mnist',radius=False,n=3)
 #t_curve('custom_cluster_300',radius=False,n=3)

@@ -93,7 +93,7 @@ class SGD_d:
 
         #t = 0.6
         for epoch in range(num_iter+1):
-
+            step = 0.001
             x_prime = grad_stress(X,t)
 
             new_change = step * x_prime + momentum * change
