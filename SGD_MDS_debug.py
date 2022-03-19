@@ -85,15 +85,14 @@ class SGD_d:
             # r = -np.sum( r )
             r = -np.sum( np.log(diff+eps) )
 
-            return (1/l_sum) * np.sum(stress) + (t/l_sum) * r
+            return ((1/l_sum) * np.sum(stress) + (t/l_sum) * r) / N **2
 
-        step,change,momentum = 0.001, 0.0, 0.5
+        step,change,momentum = 60, 0.0, 0.5
         grad_stress = grad(stress)
         cost = 0
 
         #t = 0.6
         for epoch in range(num_iter+1):
-            step = 0.001
             x_prime = grad_stress(X,t)
 
             new_change = step * x_prime + momentum * change
@@ -107,9 +106,10 @@ class SGD_d:
 
             if epoch > 40:
                 max_change = sizes[epoch - 40 : epoch].max()
-                cost = stress(X,t)
-                print("Epoch: {} . Cost value: {} . Max change over last 40 epochs: {}".format(epoch,int(cost),round(max_change,5)),end='\r')
-                if max_change < tol: break
+                # cost = stress(X,t)
+                # print(cost)
+                print("Epoch: {} . . Max change over last 40 epochs: {}".format(epoch,round(max_change,5)),end='\r')
+                if max_change < tol and epoch > 100: break
                 # if epoch % 101 == 0:
                 #     if stress(X,t) < -70000: break
 

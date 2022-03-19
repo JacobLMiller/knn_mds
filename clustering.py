@@ -40,6 +40,25 @@ def convert_graph(H):
         G.add_edge(e[0],e[1])
     return G
 
+def block_model(n=500,lam=10,num_blocks=5):
+    def prob(a, b):
+
+       if a == b:
+
+           return 0.999
+
+       else:
+
+           return 0.001
+    G, bm = gt.random_graph(n, lambda: np.random.poisson(lam=lam), directed=False,
+
+                            model="blockmodel",
+
+                            block_membership=lambda: random.randint(0,num_blocks-1),
+
+                            edge_probs=prob)
+    return G,bm
+
 # BA = lambda n,m,c: gt.price_network(n,m=m,c=c,directed=False)
 #
 # for _ in range(100):
@@ -100,6 +119,14 @@ graph_paths = os.listdir('graphs/')
 #     G = gt.load_graph('graphs/{}'.format(graph))
 #     clust = gt.local_clustering(G)
 #     print("Graph: {}, CC: {}".format(graph, gt.vertex_average(G,clust)) )
+
+for i in [100,200,300,400,500,700,1000,1500]:
+    G,bm = block_model(n=i)
+    CC = gt.local_clustering(G)
+    G.vertex_properties['block'] = bm
+
+    G.save('random_runs/block_model{}.dot'.format(i))
+
 
 
 # for n in [200]:

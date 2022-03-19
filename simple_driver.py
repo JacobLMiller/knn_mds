@@ -224,13 +224,13 @@ def drive(graph,hist=False,radius=False):
 
     K = np.linspace( 5,G.num_vertices()-1, 8)
 
-    w = get_w(G,k=198,a=5)
+    w = get_w(G,k=20,a=5)
     k=1
     w = w if not radius else (d <= k).astype('int')
 
 
-    Y = SGD(d,weighted=True, w = w)
-    X = Y.solve(5000,debug=hist,t=0)
+    Y = SGD_d(d,weighted=True, w = w)
+    X = Y.solve(5000,debug=hist,t=0.6)
     #X = [x for x in X]
     if hist:
         draw_hist(G,X,d,w,Y)
@@ -238,7 +238,7 @@ def drive(graph,hist=False,radius=False):
         draw(G,X)
 
 
-drive('random_runs/connected_watts_200',hist=True,radius=False)
+drive('random_runs/connected_watts_1000',hist=True,radius=False)
 #k_curve('airlines',folder='graphs/',radius=False,n=5)
 #a_curve('test_mnist',radius=False,n=3)
 #t_curve('custom_cluster_300',radius=False,n=3)

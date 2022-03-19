@@ -94,7 +94,7 @@ def q_ij_gaussian_var(Y):
 
 
 # Per point cost function
-def cost_var1(X, Y, sigma, l_kl, l_c, l_r, r_eps):
+def cost_var(X, Y, sigma, l_kl, l_c, l_r, r_eps):
     N = X.shape[0]
 
     # Used to normalize s.t. the l_*'s sum up to one.
@@ -121,7 +121,7 @@ def cost_var1(X, Y, sigma, l_kl, l_c, l_r, r_eps):
 
     return cost
 
-def cost_var(X, Y, sigma, l_kl, l_c, l_r, r_eps,a):
+def cost_var2(X, Y, sigma, l_kl, l_c, l_r, r_eps,a):
     N = X.shape[0]
 
     # Used to normalize s.t. the l_*'s sum up to one.
@@ -252,7 +252,7 @@ def find_Y(X_shared, Y_shared, sigma_shared, N, output_dims, n_epochs,
     Yv_shared = theano.shared(np.zeros((N, output_dims), dtype=floath))
 
     # Function for retrieving cost for all individual data points
-    costs = cost_var(X, Y, sigma, l_kl, l_c, l_r, r_eps,a)
+    costs = cost_var(X, Y, sigma, l_kl, l_c, l_r, r_eps)
 
     # Sum of all costs (scalar)
     cost = T.sum(costs)

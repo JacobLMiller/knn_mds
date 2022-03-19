@@ -53,19 +53,20 @@ def stress(X,d):
             stress += pow(np.linalg.norm(X[i]-X[j])-d[i][j],2)
     return pow(stress,0.5)
 
-with open('data/test_low6.pkl', 'rb') as myfile:
+with open('data/random_graphs1.pkl', 'rb') as myfile:
     data = pickle.load(myfile)
 
 print(data.keys())
 
-graph = data['jazz.dot']
+graph = data['powerlaw300']
+print(graph)
 
 metric = 'NP'
 
 #tsnet = graph['tsnet'][metric]
 #SGD = graph['SGD'][metric]
-LG_low = graph['LG_low'][metric]
-LG_high = graph['LG_high'][metric]
+LG_low = graph[metric]
+
 
 
 
@@ -83,9 +84,9 @@ column_labels = ["k=8","k= |V|"]
 cell_data = []
 count_tsnet, count_sgd = 0,0
 for row in row_labels:
-    if data[row]['LG_low'][metric][0] != None:
-        tsnet = np.array(data[row]['LG_low'][metric]).mean()
-        sgd = np.array(data[row]['LG_high'][metric]).mean()
+    if data[row][metric][0] > 0:
+        tsnet = data[row][metric][1]
+        sgd = data[row][metric][-1]
         if tsnet < sgd:
             count_tsnet += 1
         else:
