@@ -48,10 +48,9 @@ def draw(G,X,output=None):
     else:
         gt.graph_draw(G,pos=pos)
 
-def calc_adj(graph,G,d,d_norm):
+def calc_adj(graph,G,d,d_norm,a):
     NP,stress = [],[]
     K = np.linspace( 10,100, 8)
-    a = 3 if graph[0] == 'p' else 5
     for k in K:
         k = int(k) if k < G.num_vertices() else G.num_vertices()-1
         w = get_w(G,k=k,a=a)
@@ -128,11 +127,12 @@ def experiment(n=5):
     import pickle
     import copy
 
-    path = 'random_runs/'
+    path = 'tsnet-graphs/'
     graph_paths = os.listdir(path)
 
     graph_paths = list( map(lambda s: s.split('.')[0], graph_paths) )
     #graph_paths = ['custom_cluster_100']
+    graph_paths = graph_paths[9:]
     print(graph_paths)
 
     adjacency_len = len( np.linspace(5,100,8) )
@@ -150,10 +150,10 @@ def experiment(n=5):
         G = gt.load_graph(path+graph + '.dot')
         d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
         d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
-        #if G.num_vertices() > 999: continue
+        if G.num_vertices() > 2001: continue
 
-        CC,_ = gt.global_clustering(G)
-        a = 2 if CC < 0.1 else 3 if CC < 0.4 else 4 if CC < 0.6 else 5
+        CC = G.num_edges() // G.num_vertices()
+        a = 3 if CC < 4 else 4 if CC < 8 else 5
 
         print("Graph: " + graph)
         print("-----------------------------------------------------------")
@@ -162,7 +162,7 @@ def experiment(n=5):
             print()
             print("Iteration number ", i)
 
-            NP,stress = calc_adj(graph,G,d,d_norm)
+            NP,stress = calc_adj(graph,G,d,d_norm,a)
             graph_dict[graph]['NP'] += NP
             graph_dict[graph]['stress'] += stress
 
@@ -184,7 +184,7 @@ def experiment(n=5):
         print()
         print()
 
-    with open('data/random_graphs2.pkl','wb') as myfile:
+    with open('data/lg_tsnet_graphs1.pkl','wb') as myfile:
         pickle.dump(graph_dict,myfile)
     myfile.close()
 

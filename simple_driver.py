@@ -28,7 +28,7 @@ def get_w(G,k=5,a=5):
 
     n = G.num_vertices()
     N = 0
-    w = np.asarray([[ 1e-9 if i != j else 0 for i in range(len(A))] for j in range(len(A))])
+    w = np.asarray([[ 0 if i != j else 0 for i in range(len(A))] for j in range(len(A))])
     for i in range(len(A)):
         for j in k_nearest[i]:
             if i != j:
@@ -50,12 +50,15 @@ def layout(G,d,d_norm,debug=True, k=7, a=5,t=0.6,radius=False):
 def draw(G,X,output=None):
     from graph_tool import GraphView
 
+    b = 50
+
     pos = G.new_vp('vector<float>')
     pos.set_2d_array(X.T)
     #
     u = GraphView(G, efilt=lambda e: True)
     deg = G.degree_property_map("total")
     deg.a = 4 * (np.sqrt(deg.a) * 0.5 + 0.4)
+
 
     if output:
         gt.graph_draw(u,pos=pos,vertex_size=deg,output=output)
@@ -218,19 +221,23 @@ def drive(graph,hist=False,radius=False):
     d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
     d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
 
-    # Y = SGD_MDS(d)
-    # X = Y.solve()
-    # draw(G,X,output='full_cw200.png')
+    Y = SGD_MDS(d)
+    X = Y.solve()
+    draw(G,X,output='full_cw500.png')
+
+    a = 3
+    k = 4
 
     K = np.linspace( 5,G.num_vertices()-1, 8)
 
-    w = get_w(G,k=20,a=5)
+    w = get_w(G,k=k,a=a)
     k=1
     w = w if not radius else (d <= k).astype('int')
 
 
     Y = SGD_d(d,weighted=True, w = w)
     X = Y.solve(5000,debug=hist,t=0.6)
+    #print(get_neighborhood(X,d))
     #X = [x for x in X]
     if hist:
         draw_hist(G,X,d,w,Y)
@@ -238,7 +245,7 @@ def drive(graph,hist=False,radius=False):
         draw(G,X)
 
 
-drive('random_runs/connected_watts_1000',hist=True,radius=False)
+drive('graphs/block_400',hist=True,radius=False)
 #k_curve('airlines',folder='graphs/',radius=False,n=5)
 #a_curve('test_mnist',radius=False,n=3)
 #t_curve('custom_cluster_300',radius=False,n=3)

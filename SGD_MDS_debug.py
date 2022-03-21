@@ -48,7 +48,7 @@ class SGD_d:
         #sched = lambda count: 1/np.sqrt(count+1)
         return np.array([sched(count) for count in range(100)])
 
-    def solve(self,num_iter=1500,debug=False,t=1,radius=False, k=1,tol=1e-8):
+    def solve(self,num_iter=1500,debug=False,t=1,radius=False, k=1,tol=1e-7):
         import autograd.numpy as np
         from autograd import grad
         from sklearn.metrics import pairwise_distances
@@ -87,7 +87,7 @@ class SGD_d:
 
             return ((1/l_sum) * np.sum(stress) + (t/l_sum) * r) / N **2
 
-        step,change,momentum = 60, 0.0, 0.5
+        step,change,momentum = 100, 0.0, 0.5
         grad_stress = grad(stress)
         cost = 0
 

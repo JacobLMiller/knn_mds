@@ -56,12 +56,18 @@ def stress(X,d):
 with open('data/random_graphs1.pkl', 'rb') as myfile:
     data = pickle.load(myfile)
 
-print(data.keys())
+with open('data/sgd_random_graphs1.pkl','rb') as myfile:
+    sgd_data = pickle.load(myfile)
+
+with open('data/tsnet_random_graphs1.pkl','rb') as myfile:
+    tsnet_data = pickle.load(myfile)
+
+print(sgd_data.keys())
 
 graph = data['powerlaw300']
 print(graph)
 
-metric = 'NP'
+metric = 'stress'
 
 #tsnet = graph['tsnet'][metric]
 #SGD = graph['SGD'][metric]
@@ -79,34 +85,59 @@ LG_low = graph[metric]
 # plt.clf()
 
 row_labels = list(data.keys())
-column_labels = ["k=8","k= |V|"]
+row_labels.sort()
+for graph in row_labels.copy():
+    print(graph)
+    if 'custom' in graph or '1000' in graph or '1500' in graph or '100' in graph:
+        row_labels.remove(graph)
+        print(row_labels)
+print(row_labels)
+
+max_graph = {graph:0 for graph in row_labels}
+
+column_labels = ["LG,k=18","LG,k= |V|", 'SGD', 'tsNET']
 
 cell_data = []
 count_tsnet, count_sgd = 0,0
 for row in row_labels:
     if data[row][metric][0] > 0:
-        tsnet = data[row][metric][1]
-        sgd = data[row][metric][-1]
-        if tsnet < sgd:
-            count_tsnet += 1
-        else:
-            count_sgd += 1
-        cell_data.append([round(tsnet,5),round(sgd,5)])
+        lg_low = min(data[row][metric])
+        lg_high = data[row][metric][-1]
+        sgd = sgd_data[row][metric]
+        tsnet = tsnet_data[row][metric]
+        this_row = np.array([round(lg_low,5),round(lg_high,5),round(sgd,5),round(tsnet,5)])
+        cell_data.append(this_row)
+        max_graph[row] = np.argmin(this_row)
     else:
-        cell_data.append([0,0])
+        cell_data.append([0,0,0,0])
 
 print("low performed better on ", count_tsnet)
 print("hgih performed better on ", count_sgd)
 
 plt.suptitle("NP")
-plt.table(cellText=cell_data,
+table = plt.table(cellText=cell_data,
                       rowLabels=row_labels,
                       colLabels=column_labels,
-                      loc=None,
-                      colWidths=[0.2,0.2,0.2],
+                      loc='center',
+                      colWidths=[0.2,0.2,0.2,0.2],
                       cellLoc='center')
+
+import matplotlib.pyplot as plt
+from matplotlib.font_manager import FontProperties
+
+for (row, col), cell in table.get_celld().items():
+    print(row)
+    print(row_labels[row-1])
+    print()
+    if row == 0: continue
+    if (max_graph[row_labels[row-1]] == col):
+        cell.set_text_props(fontproperties=FontProperties(weight='bold'))
+
 plt.xticks([])
 plt.yticks([])
 plt.axis('off')
 
-plt.show()
+fig = plt.gcf()
+fig.set_size_inches(18.5, 10.5)
+
+plt.savefig('prelim_table_stress.eps')
