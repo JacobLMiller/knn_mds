@@ -197,7 +197,7 @@ def draw_hist(G,Xs,d,w,Y):
 
 
     for count in range(len(Xs)-1):
-        if count % 100 == 0: #or count < 100:
+        if count % 1 == 0: #or count < 100:
             draw( G,Xs[count],output="drawings/update/test_{}.png".format(count) )
             NP.append(get_neighborhood(Xs[count],d))
             cost.append( get_cost( Xs[count], d, w, 0.6 ) )
@@ -226,7 +226,7 @@ def drive(graph,hist=False,radius=False):
     draw(G,X,output='full_cw500.png')
 
     a = 3
-    k = 4
+    k = 30
 
     K = np.linspace( 5,G.num_vertices()-1, 8)
 
@@ -235,8 +235,8 @@ def drive(graph,hist=False,radius=False):
     w = w if not radius else (d <= k).astype('int')
 
 
-    Y = SGD_d(d,weighted=True, w = w)
-    X = Y.solve(5000,debug=hist,t=0.6)
+    Y = SGD(d,weighted=True, w = w)
+    X = Y.solve(200,debug=hist,t=0.6)
     #print(get_neighborhood(X,d))
     #X = [x for x in X]
     if hist:
@@ -245,7 +245,7 @@ def drive(graph,hist=False,radius=False):
         draw(G,X)
 
 
-drive('graphs/block_400',hist=True,radius=False)
+drive('graphs/dwt_1005',hist=False,radius=False)
 #k_curve('airlines',folder='graphs/',radius=False,n=5)
 #a_curve('test_mnist',radius=False,n=3)
 #t_curve('custom_cluster_300',radius=False,n=3)

@@ -40,7 +40,7 @@ def convert_graph(H):
         G.add_edge(e[0],e[1])
     return G
 
-def block_model(n=500,lam=10,num_blocks=5):
+def block_model(n=500,lam=10,num_blocks=10):
     def prob(a, b):
 
        if a == b:
@@ -125,7 +125,7 @@ for i in [100,200,300,400,500,700,1000,1500]:
     CC = gt.local_clustering(G)
     G.vertex_properties['block'] = bm
 
-    G.save('random_runs/block_model{}.dot'.format(i))
+    G.save('random_runs/block_model_{}.dot'.format(i))
 
 
 

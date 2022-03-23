@@ -9,6 +9,7 @@ from metrics import get_stress,get_neighborhood
 
 import matplotlib.pyplot as plt
 import modules.thesne as thesne
+import s_gd2
 
 
 def draw(G,X,output=None):
@@ -40,7 +41,13 @@ def run_tsnet(name,G,d,d_norm):
     return get_neighborhood(X,d),get_stress(X,d_norm)
 
 def run_sgd(name,G,d,d_norm):
-    X = SGD_MDS(d).solve()
+    I = []
+    J = []
+    for e1,e2 in G.iter_edges():
+        I.append(e1)
+        J.append(e2)
+
+    X = s_gd2.layout_convergent(I, J)
     X = layout_io.normalize_layout(X)
 
     draw(G,X,output='drawings/sgd_compare/{}.png'.format(name))
@@ -52,7 +59,7 @@ def experiment(n=5):
     import pickle
     import copy
 
-    path = 'tsnet-graphs/'
+    path = 'random_runs/'
     graph_paths = os.listdir(path)
 
     graph_paths = list( map(lambda s: s.split('.')[0], graph_paths) )
@@ -97,7 +104,7 @@ def experiment(n=5):
         print()
         print()
 
-    with open('data/tsnet_tsnet_graphs.pkl','wb') as myfile:
+    with open('data/tsnet_random_graphs.pkl','wb') as myfile:
         pickle.dump(graph_dict,myfile)
     myfile.close()
 

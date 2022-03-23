@@ -87,7 +87,7 @@ class SGD_d:
 
             return ((1/l_sum) * np.sum(stress) + (t/l_sum) * r) / N **2
 
-        step,change,momentum = 100, 0.0, 0.5
+        step,change,momentum = 50, 0.0, 0.5
         grad_stress = grad(stress)
         cost = 0
 

@@ -18,33 +18,76 @@ def norm_grad(x):
     return x/norm(x)
 
 @jit(nopython=True)
-def grad_stress(u,v,t,dij,wij,diam):
+def grad_stress(u,v,dij,step):
     pq = u-v
     mag = np.linalg.norm(pq)
     mag_grad = pq/mag
 
-    stress = wij * 2 * (mag-dij) * mag_grad
+    w = 1/(dij**2)
+    mu = step*w
+    if mu >= 1: mu = 1
 
-    repulsion = -(1/mag) * mag_grad
-    if mag > 3*diam:
-        repulsion *= 1
+    r = (mu*(mag-dij))/(2*mag)
+    stress = r*pq
 
-    l_sum = 1+t
-    return (1/l_sum) * stress + (t/l_sum) * repulsion
+    # repulsion = -(1/mag) * mag_grad
+    # if mag > 3*diam:
+    #     repulsion *= 1
+    #
+    # l_sum = 1+t
+    return u-stress,v+stress
 
 
 @jit(nopython=True)
 def iteration(X,w,d,indices,t,step):
     max_change = 0
     diam = np.max(d)
+    if step >= 1: step = 1
     for i,j in indices:
         old = np.linalg.norm(X[i]-X[j])
-        change = grad_stress(X[i],X[j],t,d[i][j],w[i][j],diam)
-        X[i] = X[i] - step * change
-        X[j] = X[j] + step * change
+        ci, cj = grad_stress(X[i],X[j],d[i][j],step)
+        X[i] = ci
+        X[j] = cj
         new = np.linalg.norm(X[i]-X[j])
         max_change = max(max_change, abs(new-old))
     return X,max_change
+
+@jit(nopython=True)
+def sgd(X,d,w,indices,schedule,t,tol):
+    shuffle = np.random.shuffle
+    for epoch in range(len(schedule)):
+        step = schedule[epoch]
+        X, change = iteration(X,w,d,indices,t,step)
+        if change < tol: break
+        shuffle(indices)
+        print("Epoch: " + str(epoch))
+    return X
+
+def schedule_convergent(d,t_max,eps,t_maxmax):
+    w = np.divide(np.ones(d.shape),d**2,out=np.zeros_like(d), where=d!=0)
+    w_min,w_max = np.amin(w,initial=10000,where=w > 0), np.max(w)
+
+    eta_max = 1.0 / w_min
+    eta_min = eps / w_max
+
+    lamb = np.log(eta_max/eta_min) / (t_max-1)
+
+    # initialize step sizes
+    etas = np.zeros(t_maxmax)
+    eta_switch = 1.0 / w_max
+    for t in range(t_maxmax):
+        eta = eta_max * np.exp(-lamb * t)
+        if (eta < eta_switch):
+            break
+
+        etas[t] = eta
+
+    tau = t
+    for t in range(t,t_maxmax):
+        eta = eta_switch / (1 + lamb*(t-tau))
+        etas[t] = eta
+
+    return np.array(etas)
 
 class SGD:
     def __init__(self,dissimilarities,k=5,weighted=True,w = np.array([]), init_pos=np.array([])):
@@ -75,13 +118,24 @@ class SGD:
         epsilon = 0.1
         self.eta_min = epsilon/self.w_max
 
+        print(schedule_convergent(self.d,30,0.01,200))
+
     def get_sched(self,num_iter):
         lamb = np.log(self.eta_min/self.eta_max)/(num_iter-1)
         sched = lambda count: self.eta_max*np.exp(lamb*count)
         #sched = lambda count: 1/np.sqrt(count+1)
         return np.array([sched(count) for count in range(100)])
 
-    def solve(self,num_iter=1500,debug=False,t=1,radius=False, k=1,tol=1e-8):
+    def solve(self,num_iter,debug=False,t=0.6,tol=1e-3):
+        import itertools
+
+        indices = np.array(list(itertools.combinations(range(self.n), 2)))
+        schedule = schedule_convergent(self.d,30,0.01,num_iter)
+
+        self.X = sgd(self.X,self.d,self.w,indices,schedule,t,tol)
+        return self.X
+
+    def solve_old(self,num_iter=1500,debug=False,t=1,radius=False, k=1,tol=1e-3):
         #import autograd.numpy as np
         from autograd import grad
         from sklearn.metrics import pairwise_distances
@@ -128,9 +182,9 @@ class SGD:
         cost = 0
 
         #t = 0.6
-        for epoch in range(num_iter+1):
-            step = 0.1/np.sqrt(epoch+1)
-            step = 0.001
+        schedule = schedule_convergent(d,30,0.01,200)
+        for epoch in range(len(schedule)):
+            step = schedule[epoch]
             #step = step if step < 0.5 else 0.5
 
 
@@ -149,9 +203,8 @@ class SGD:
             # change = new_change
 
             if epoch > 15:
-                max_change = sizes[epoch - 1 : epoch].max()
-                cost = stress(X,t)
-                print("Epoch: {} . Cost: {}. Max change over last 1: {} . ".format(epoch,int(cost),round(change,5),end='\r') )
+                max_change = change
+                print("Epoch: {} . Max change over last 1: {} . ".format(epoch,round(change,5),end='\r') )
                 #if max_change < tol: break
                 # if epoch % 101 == 0:
                 #     if stress(X,t) < -70000: break
