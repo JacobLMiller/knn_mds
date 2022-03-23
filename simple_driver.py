@@ -221,12 +221,8 @@ def drive(graph,hist=False,radius=False):
     d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
     d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
 
-    Y = SGD_MDS(d)
-    X = Y.solve()
-    draw(G,X,output='full_cw500.png')
-
     a = 3
-    k = 30
+    k = 10
 
     K = np.linspace( 5,G.num_vertices()-1, 8)
 
@@ -237,6 +233,7 @@ def drive(graph,hist=False,radius=False):
 
     Y = SGD(d,weighted=True, w = w)
     X = Y.solve(200,debug=hist,t=0.6)
+    X = np.asarray(X)
     #print(get_neighborhood(X,d))
     #X = [x for x in X]
     if hist:
@@ -245,7 +242,10 @@ def drive(graph,hist=False,radius=False):
         draw(G,X)
 
 
-drive('graphs/dwt_1005',hist=False,radius=False)
+drive('graphs/dwt_419',hist=False,radius=False)
+# import cProfile
+# cProfile.run('drive(\'graphs/10square\',hist=False,radius=False)')
+
 #k_curve('airlines',folder='graphs/',radius=False,n=5)
 #a_curve('test_mnist',radius=False,n=3)
 #t_curve('custom_cluster_300',radius=False,n=3)

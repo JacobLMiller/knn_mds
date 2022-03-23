@@ -1,6 +1,7 @@
 import s_gd2
 import graph_tool.all as gt
-G = gt.load_graph("graphs/dwt_419.dot")
+G = gt.load_graph("random_runs/block_model_300.dot")
+G = gt.price_network(500,directed=False)
 I = []
 J = []
 for e1,e2 in G.iter_edges():

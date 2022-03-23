@@ -11,53 +11,99 @@ from numba import jit
 import math
 import random
 
-norm = lambda x: np.linalg.norm(x,ord=2)
+norm = np.linalg.norm
 
 @jit
 def norm_grad(x):
     return x/norm(x)
 
-@jit(nopython=True)
-def grad_stress(u,v,dij,step):
+#@jit(nopython=True)
+def grad_stress(u,v,dij,w,step,n):
     pq = u-v
-    mag = np.linalg.norm(pq)
+    mag = np.sqrt(pq[0]*pq[0] + pq[1]*pq[1])
     mag_grad = pq/mag
 
-    w = 1/(dij**2)
+    #w = 1/(dij**2)
     mu = step*w
     if mu >= 1: mu = 1
 
     r = (mu*(mag-dij))/(2*mag)
     stress = r*pq
 
-    # repulsion = -(1/mag) * mag_grad
+    mu1 = step if step < 1 else 1
+    repulsion = -((step/mag) * mag_grad)
     # if mag > 3*diam:
     #     repulsion *= 1
     #
-    # l_sum = 1+t
-    return u-stress,v+stress
+    l_sum = 1+0.01
+    m = (1/l_sum)*stress + (0.5/l_sum)*repulsion
+    return m
 
 
-@jit(nopython=True)
-def iteration(X,w,d,indices,t,step):
-    max_change = 0
-    diam = np.max(d)
-    if step >= 1: step = 1
+#@jit(nopython=True)
+def iteration(X,w,d,indices,t,step,n):
+    max_change = 10
+    #if step >= 1: step = 1
     for i,j in indices:
-        old = np.linalg.norm(X[i]-X[j])
-        ci, cj = grad_stress(X[i],X[j],d[i][j],step)
-        X[i] = ci
-        X[j] = cj
-        new = np.linalg.norm(X[i]-X[j])
-        max_change = max(max_change, abs(new-old))
+        #old = np.linalg.norm(X[i]-X[j])
+        pq = X[i]-X[j]
+        mag = np.sqrt(pq[0]*pq[0] + pq[1]*pq[1])
+        mag_grad = pq/mag
+
+        #w = 1/(dij**2)
+        mu = step*w[i][j]
+        if mu >= 1: mu = 1
+
+        r = (mu*(mag-d[i][j]))/(2*mag)
+        stress = r*pq
+
+        mu1 = step if step < 1 else 1
+        repulsion = -((step/mag) * mag_grad)
+        # if mag > 3*diam:
+        #     repulsion *= 1
+        #
+        l_sum = 1+0.01
+        m = (1/l_sum)*stress + (0.5/l_sum)*repulsion
+
+        X[i] -= m
+        X[j] += m
+        #new = np.linalg.norm(X[i]-X[j])
+        #max_change = max(max_change, abs(new-old))
+
     return X,max_change
 
 @jit(nopython=True)
 def sgd(X,d,w,indices,schedule,t,tol):
     shuffle = np.random.shuffle
+    n = len(X)
     for epoch in range(len(schedule)):
         step = schedule[epoch]
-        X, change = iteration(X,w,d,indices,t,step)
+
+        change = 10
+        for i,j in indices:
+            #old = np.linalg.norm(X[i]-X[j])
+            pq = X[i]-X[j]
+            mag = (pq[0]*pq[0] + pq[1]*pq[1]) ** 0.5
+            mag_grad = pq/mag
+
+            #w = 1/(dij**2)
+            mu = step*w[i][j]
+            if mu >= 1: mu = 1
+
+            r = (mu*(mag-d[i][j]))/(2*mag)
+            stress = r*pq
+
+            mu1 = step if step < 1 else 1
+            repulsion = -((step/mag) * mag_grad)
+            # if mag > 3*diam:
+            #     repulsion *= 1
+            #
+            l_sum = 1+0.01
+            m = (1/l_sum)*stress + (0.01/l_sum)*repulsion
+
+            X[i] -= m
+            X[j] += m
+
         if change < tol: break
         shuffle(indices)
         print("Epoch: " + str(epoch))
@@ -98,10 +144,9 @@ class SGD:
         if init_pos.any():
             self.X = np.asarray(init_pos)
         else: #Random point in the chosen geometry
-            self.X = np.zeros((len(self.d),2))
-            for i in range(len(self.d)):
-                self.X[i] = self.init_point()
-            self.X = np.asarray(self.X)
+            self.X = np.random.uniform(0,1,(self.n,2))
+
+            #self.X = np.asarray(self.X)
 
         a = 1
         b = 1
@@ -130,7 +175,7 @@ class SGD:
         import itertools
 
         indices = np.array(list(itertools.combinations(range(self.n), 2)))
-        schedule = schedule_convergent(self.d,30,0.01,num_iter)
+        schedule = schedule_convergent(self.d,30,0.1,num_iter)
 
         self.X = sgd(self.X,self.d,self.w,indices,schedule,t,tol)
         return self.X
@@ -229,7 +274,7 @@ class SGD:
 
 
     def init_point(self):
-        return [random.uniform(-1,1),random.uniform(-1,1)]
+        return np.random.uniform(0,1,2)
 
 
 def choose(n,k):
