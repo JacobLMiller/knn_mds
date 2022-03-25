@@ -24,7 +24,9 @@ def get_stress(X,d):
     from math import comb
     N = len(X)
     ss = (X * X).sum(axis=1)
-    diff = np.sqrt( ss.reshape((N, 1)) + ss.reshape((1, N)) - 2 * np.dot(X,X.T) )
+
+    diff = np.sqrt( abs(ss.reshape((N, 1)) + ss.reshape((1, N)) - 2 * np.dot(X,X.T)) )
+
     np.fill_diagonal(diff,0)
     stress = lambda a:  np.sum( np.square( np.divide( (a*diff-d), d , out=np.zeros_like(d), where=d!=0) ) ) / comb(N,2)
 

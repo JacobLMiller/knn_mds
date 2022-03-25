@@ -28,7 +28,7 @@ def get_w(G,k=5,a=5):
 
     n = G.num_vertices()
     N = 0
-    w = np.asarray([[ 0 if i != j else 0 for i in range(len(A))] for j in range(len(A))])
+    w = np.asarray([[ 1e-7 if i != j else 0 for i in range(len(A))] for j in range(len(A))])
     for i in range(len(A)):
         for j in k_nearest[i]:
             if i != j:
@@ -61,7 +61,7 @@ def draw(G,X,output=None):
 
 
     if output:
-        gt.graph_draw(u,pos=pos,vertex_size=deg,output=output)
+        gt.graph_draw(u,pos=pos,output=output)
     else:
         gt.graph_draw(G,pos=pos)
 
@@ -213,36 +213,54 @@ def draw_hist(G,Xs,d,w,Y):
     plt.show()
 
 
-
-
-
-def drive(graph,hist=False,radius=False):
+def iterate(graph):
     G = gt.load_graph("{}.dot".format(graph))
     d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
     d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
 
-    a = 3
+    a = 5
+    k = 100
+
+    K = np.linspace( 5,G.num_vertices()-1, 8)
+
+    w = get_w(G,k=k,a=a)
+
+    for t in np.linspace(0,1,10):
+        Y = SGD(d,weighted=True, w = w)
+        X = Y.solve(30,debug=False,t=t)
+
+        print('NP: {}'.format(get_neighborhood(X,d)))
+        print('stress: {}'.format(get_stress(X,d)))
+        draw(G,X)
+
+def drive(graph,hist=False,output=None):
+    G = gt.load_graph("{}.dot".format(graph))
+    d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
+    d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
+
+    a = 5
     k = 10
 
     K = np.linspace( 5,G.num_vertices()-1, 8)
 
     w = get_w(G,k=k,a=a)
-    k=1
-    w = w if not radius else (d <= k).astype('int')
 
 
     Y = SGD(d,weighted=True, w = w)
-    X = Y.solve(200,debug=hist,t=0.6)
+    X = Y.solve(30,debug=hist,t=0.1)
     X = np.asarray(X)
-    #print(get_neighborhood(X,d))
+    print('NP: {}'.format(get_neighborhood(X,d)))
+    print('stress: {}'.format(get_stress(X,d)))
     #X = [x for x in X]
     if hist:
         draw_hist(G,X,d,w,Y)
     else:
-        draw(G,X)
+        draw(G,X,output=output)
 
 
-drive('graphs/dwt_419',hist=False,radius=False)
+drive('graphs/block_400',hist=False)
+iterate('graphs/dwt_419')
+#drive('graphs/dwt_419',hist=False)
 # import cProfile
 # cProfile.run('drive(\'graphs/10square\',hist=False,radius=False)')
 

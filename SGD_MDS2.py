@@ -72,7 +72,7 @@ def iteration(X,w,d,indices,t,step,n):
 
     return X,max_change
 
-@jit(nopython=True)
+@jit(nopython=True,cache=True)
 def sgd(X,d,w,indices,schedule,t,tol):
     shuffle = np.random.shuffle
     n = len(X)
@@ -94,12 +94,12 @@ def sgd(X,d,w,indices,schedule,t,tol):
             stress = r*pq
 
             mu1 = step if step < 1 else 1
-            repulsion = -((step/mag) * mag_grad)
+            repulsion = -((mu1/mag) * mag_grad)
             # if mag > 3*diam:
             #     repulsion *= 1
             #
-            l_sum = 1+0.01
-            m = (1/l_sum)*stress + (0.01/l_sum)*repulsion
+            l_sum = 1+t
+            m = (1/l_sum)*stress + (t/l_sum)*repulsion
 
             X[i] -= m
             X[j] += m

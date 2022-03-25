@@ -53,7 +53,9 @@ def example():
     print(sum(times)/len(times))
 
 import numpy as np
-x = np.array([0,1,2,3,4])
-y = np.array([0,1,2,3,4])
 
-print(x.ravel()[y.ravel()])
+mn = np.triu_indices(50)
+for i in mn:
+    print(i)
+
+X = np.random.uniform(0,1,(100,2))
