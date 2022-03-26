@@ -219,19 +219,25 @@ def iterate(graph):
     d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
 
     a = 5
-    k = 100
+    k = 10
 
     K = np.linspace( 5,G.num_vertices()-1, 8)
 
     w = get_w(G,k=k,a=a)
 
-    for t in np.linspace(0,1,10):
+    cost = []
+
+    for t in range(30,201,10):
         Y = SGD(d,weighted=True, w = w)
-        X = Y.solve(30,debug=False,t=t)
+        X = Y.solve(t,debug=False,t=0.1)
 
         print('NP: {}'.format(get_neighborhood(X,d)))
         print('stress: {}'.format(get_stress(X,d)))
-        draw(G,X)
+        draw(G,X,output='test{}.png'.format(t))
+        cost.append(get_cost(X,d,w,0.1))
+
+    plt.plot(list(range(30,201,10)),cost,label='Cost value')
+    plt.show()
 
 def drive(graph,hist=False,output=None):
     G = gt.load_graph("{}.dot".format(graph))
@@ -258,8 +264,8 @@ def drive(graph,hist=False,output=None):
         draw(G,X,output=output)
 
 
-drive('graphs/block_400',hist=False)
-iterate('graphs/dwt_419')
+drive('graphs/block_2000',hist=False)
+#iterate('random_runs/block_model_200')
 #drive('graphs/dwt_419',hist=False)
 # import cProfile
 # cProfile.run('drive(\'graphs/10square\',hist=False,radius=False)')

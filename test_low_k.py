@@ -4,7 +4,7 @@ import modules.layout_io as layout_io
 import modules.distance_matrix as distance_matrix
 import modules.thesne as thesne
 
-#from SGD_MDS2 import SGD_MDS2
+from SGD_MDS2 import SGD
 from SGD_MDS_debug import SGD_d
 from SGD_MDS import SGD_MDS
 
@@ -54,8 +54,8 @@ def calc_adj(graph,G,d,d_norm,a):
     for k in K:
         k = int(k) if k < G.num_vertices() else G.num_vertices()-1
         w = get_w(G,k=k,a=a)
-        Y = SGD_d(d,w=w,weighted=True)
-        X = Y.solve(5000,radius=False)
+        Y = SGD(d,w=w,weighted=True)
+        X = Y.solve(50,t=0.1)
         X = layout_io.normalize_layout(X)
         stress.append(get_stress(X,d_norm))
         NP.append(get_neighborhood(X,d))
@@ -127,7 +127,7 @@ def experiment(n=5):
     import pickle
     import copy
 
-    path = 'tsnet-graphs/'
+    path = 'random_runs/'
     graph_paths = os.listdir(path)
 
     graph_paths = list( map(lambda s: s.split('.')[0], graph_paths) )
@@ -150,7 +150,6 @@ def experiment(n=5):
         G = gt.load_graph(path+graph + '.dot')
         d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
         d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
-        if G.num_vertices() > 2001: continue
 
         CC = G.num_edges() // G.num_vertices()
         a = 3 if CC < 4 else 4 if CC < 8 else 5
@@ -184,7 +183,7 @@ def experiment(n=5):
         print()
         print()
 
-    with open('data/lg_tsnet_graphs1.pkl','wb') as myfile:
+    with open('data/lg_random_graphs1.pkl','wb') as myfile:
         pickle.dump(graph_dict,myfile)
     myfile.close()
 

@@ -82,27 +82,41 @@ def sgd(X,d,w,indices,schedule,t,tol):
         change = 10
         for i,j in indices:
             #old = np.linalg.norm(X[i]-X[j])
+            #Get difference vector
             pq = X[i]-X[j]
+
+            #Calculate its magnitude (numpys implementation was soooooo slowwwwww on the testing machine)
             mag = (pq[0]*pq[0] + pq[1]*pq[1]) ** 0.5
+
+            #derivative of eucldiean norm
             mag_grad = pq/mag
 
-            #w = 1/(dij**2)
+            #get the step size
             mu = step*w[i][j]
             if mu >= 1: mu = 1
 
+            #Find the distance to move both nodes as in https://github.com/jxz12/s_gd2
             r = (mu*(mag-d[i][j]))/(2*mag)
             stress = r*pq
 
+            #repulsion step size and calculation
             mu1 = step if step < 1 else 1
-            repulsion = -((mu1/mag) * mag_grad)
-            # if mag > 3*diam:
-            #     repulsion *= 1
-            #
+            repulsion = -mu1 * (mag_grad/mag)
+
+            #Normalize so the weights sum to 1
             l_sum = 1+t
+
+            #Final gradient w.r.t X[i]
             m = (1/l_sum)*stress + (t/l_sum)*repulsion
 
+            #Update positions
             X[i] -= m
             X[j] += m
+
+            #Track how much we changed
+            newpq = X[i]-X[j]
+            newmag = (newpq[0]*newpq[0] + newpq[1]*newpq[1]) ** 0.5
+            change = max(change,abs(mag-newmag))
 
         if change < tol: break
         shuffle(indices)
@@ -162,8 +176,6 @@ class SGD:
         self.eta_max = 1/w_min
         epsilon = 0.1
         self.eta_min = epsilon/self.w_max
-
-        print(schedule_convergent(self.d,30,0.01,200))
 
     def get_sched(self,num_iter):
         lamb = np.log(self.eta_min/self.eta_max)/(num_iter-1)
