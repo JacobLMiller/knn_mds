@@ -55,7 +55,7 @@ def calc_adj(graph,G,d,d_norm,a):
         k = int(k) if k < G.num_vertices() else G.num_vertices()-1
         w = get_w(G,k=k,a=a)
         Y = SGD(d,w=w,weighted=True)
-        X = Y.solve(50,t=0.1)
+        X = Y.solve(60,t=0.1)
         X = layout_io.normalize_layout(X)
         stress.append(get_stress(X,d_norm))
         NP.append(get_neighborhood(X,d))
@@ -175,7 +175,7 @@ def experiment(n=5):
         plt.suptitle(graph)
         plt.xlabel("k")
         plt.legend()
-        plt.savefig('figures/adjacency_kcurve_{}.png'.format(graph))
+        plt.savefig('figures/adjacency_kcurve2_{}.png'.format(graph))
         plt.clf()
 
 
@@ -183,7 +183,7 @@ def experiment(n=5):
         print()
         print()
 
-    with open('data/lg_random_graphs1.pkl','wb') as myfile:
+    with open('data/lg_random_graphs2.pkl','wb') as myfile:
         pickle.dump(graph_dict,myfile)
     myfile.close()
 

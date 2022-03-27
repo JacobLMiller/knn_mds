@@ -65,7 +65,7 @@ def sgd(X,d,w,indices,schedule,t,tol):
 
         if change < tol: break
         shuffle(indices)
-        print("Epoch: " + str(epoch))
+        #print("Epoch: " + str(epoch))
     return X
 
 def schedule_convergent(d,t_max,eps,t_maxmax):

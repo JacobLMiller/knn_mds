@@ -29,19 +29,106 @@ def iteration_exp(n,G,d,d_norm,a,graph):
 
     iteration /= n
 
-    plt.plot(t_max,iteration)
-    plt.savefig('figures/max_iter_{}'.format(graph))
+    plt.plot(t_max,iteration,label='Cost function')
+    plt.suptitle(graph)
+    plt.legend()
+    plt.savefig('figures/max_iter_{}.eps'.format(graph))
     plt.clf()
 
 
     return iteration
 
 
-def matrix_exp(n,G,d,d_norm):
-    d_power = [d for d in range(1,13)]
-    powers = np.zeros(len(d_power))
+def matrix_exp(n,G,d,d_norm,graph):
+    d_power = [a for a in range(1,13)]
+    powers = {'NP': np.zeros(len(d_power)), 'stress': np.zeros(len(d_power))}
 
     k = 21
+
+    for i in range(n):
+        for a in range(len(d_power)):
+            w = get_w(G,k=k,a=d_power[a])
+            Y = SGD(d,weighted=True,w=w)
+            X = Y.solve(60,t=0.1)
+            X = layout_io.normalize_layout(X)
+
+            powers['NP'][a] += get_neighborhood(X,d)
+            powers['stress'][a] += get_stress(X,d_norm)
+
+    powers['NP'] /= n
+    powers['stress'] /= n
+
+    plt.plot(d_power,powers['stress'],label="stress")
+    plt.plot(d_power,powers['NP'],label="NP")
+    plt.suptitle(graph)
+    plt.legend()
+    plt.savefig('figures/matrix_power_{}.eps'.format(graph))
+    plt.clf()
+
+    return powers
+
+
+def alpha_exp(n,G,d,d_norm,a,graph):
+    alphas = np.linspace(0,1,12)
+    alpha = {'NP': np.zeros(len(alphas)), 'stress': np.zeros(len(alphas))}
+
+    k = 21
+    w = get_w(G,k=k,a=a)
+
+    for i in range(n):
+        for a in range(len(alphas)):
+            Y = SGD(d,weighted=True,w=w)
+            X = Y.solve(60,alphas[a])
+            X = layout_io.normalize_layout(X)
+
+            alpha['NP'][a] += get_neighborhood(X,d)
+            alpha['stress'][a] += get_stress(X,d_norm)
+
+
+    alpha['NP'] /= n
+    alpha['stress'] /= n
+
+    plt.plot(alphas,alpha['stress'],label="stress")
+    plt.plot(alphas,alpha['NP'],label="NP")
+
+    plt.legend()
+    plt.suptitle(graph)
+    plt.savefig('figures/alpha_{}.eps'.format(graph))
+    plt.clf()
+
+    return alpha
+
+def epsilon_exp(n,G,d,d_norm,a,graph):
+    epsilons = np.linspace(0,0.1,12)
+    eps = {'NP': np.zeros(len(epsilons)), 'stress': np.zeros(len(epsilons))}
+
+    k = 21
+
+
+    for i in range(n):
+        for e in range(len(epsilons)):
+            w = get_w(G,k=k,a=a,eps = epsilons[e])
+            Y = SGD(d,weighted=True,w=w)
+            X = Y.solve(60,t=0.1)
+            X = layout_io.normalize_layout(X)
+
+            eps['NP'][e] += get_neighborhood(X,d)
+            eps['stress'][e] += get_stress(X,d_norm)
+
+
+    eps['NP'] /= n
+    eps['stress'] /= n
+
+    plt.plot(epsilons,eps['stress'],label="stress")
+    plt.plot(epsilons,eps['NP'],label="NP")
+
+    plt.legend()
+    plt.suptitle(graph)
+    plt.savefig('figures/epsilon_{}.eps'.format(graph))
+    plt.clf()
+
+    return eps
+
 
 
 def experiment(n=5):
@@ -51,7 +138,7 @@ def experiment(n=5):
 
     path = 'example_graphs/'
     graph_paths = os.listdir(path)
-    #graph_paths = ['block_400.dot']
+    #graph_paths = ['block_model300.dot']
 
     graph_paths = list( map(lambda s: s.split('.')[0], graph_paths) )
     #graph_paths = ['custom_cluster_100']
@@ -80,10 +167,18 @@ def experiment(n=5):
         print("Graph: " + graph)
         print("-----------------------------------------------------------")
 
-
+        print("Iteration experiment")
         graph_dict['iterations'] = iteration_exp(n,G,d,d_norm,a,graph)
-        #graph_dict['matrix_power'] = matrix_exp(n,G,d,d_norm)
+        print("Matrix power experiment")
+        graph_dict['matrix_power'] = matrix_exp(n,G,d,d_norm,graph)
+        print("Alpha experiment")
+        graph_dict['alpha'] = alpha_exp(n,G,d,d_norm,a,graph)
+        print("Epsilon experiment")
+        graph_dict['epsilon'] = epsilon_exp(n,G,d,d_norm,a,graph)
 
+    with open('data/paramater_experiments.pkl','wb') as myfile:
+        pickle.dump(graph_dict,myfile)
+    myfile.close()
 
 if __name__ == '__main__':
     experiment(n=5)

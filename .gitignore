@@ -11,9 +11,9 @@ drawings/test
 drawings/test3
 drawings/tsnet
 
-*.pkl
+.pkl
 !mnist_8_3.pkl
-
+data/
 
 # C extensions
 *.so

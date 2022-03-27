@@ -14,7 +14,7 @@ from sklearn.metrics import pairwise_distances
 from SGD_MDS_debug import SGD_d
 
 
-def get_w(G,k=5,a=5):
+def get_w(G,k=5,a=5,eps=0):
     A = gt.adjacency(G).toarray()
     mp = np.linalg.matrix_power
     A = sum([mp(A,i) for i in range(1,a+1)])
@@ -28,7 +28,7 @@ def get_w(G,k=5,a=5):
 
     n = G.num_vertices()
     N = 0
-    w = np.asarray([[ 1e-7 if i != j else 0 for i in range(len(A))] for j in range(len(A))])
+    w = np.asarray([[ eps if i != j else 0 for i in range(len(A))] for j in range(len(A))])
     for i in range(len(A)):
         for j in k_nearest[i]:
             if i != j:
@@ -244,18 +244,16 @@ def drive(graph,hist=False,output=None):
     d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
     d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
 
-    a = 5
+    a = 8
     k = 10
-
-    K = np.linspace( 5,G.num_vertices()-1, 8)
 
     w = get_w(G,k=k,a=a)
 
 
     Y = SGD(d,weighted=True, w = w)
-    X = Y.solve(15,debug=hist,t=0.1)
+    X = Y.solve(60,debug=hist,t=0.1)
     X = layout_io.normalize_layout(X)
-    print('NP: {}'.format(get_neighborhood(X,d)))
+    print('NP: {}'.format(get_neighborhood(X,d,1)))
     print('stress: {}'.format(get_stress(X,d)))
     #X = [x for x in X]
     if hist:
@@ -265,7 +263,7 @@ def drive(graph,hist=False,output=None):
 
 if __name__ == '__main__':
 
-    drive('graphs/block_400',hist=False)
+    drive('graphs/oscil',hist=False)
     #iterate('random_runs/block_model_200')
     #drive('graphs/dwt_419',hist=False)
     # import cProfile

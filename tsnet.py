@@ -94,12 +94,13 @@ if __name__ == '__main__':
 
 
     # Show layout on the screen
-    gt.graph_draw(g, pos=pos)
+
     X_norm = distance_matrix.get_distance_matrix(g, 'spdm', verbose=False,normalize=True)
     from metrics import get_neighborhood, tsnet_stress,get_stress
-    print(get_neighborhood(Y,X))
-    print(get_stress(Y,X_norm))
+    print('NP: {}'.format(get_neighborhood(Y,X,1)) )
+    print('Stress: {}'.format( get_stress(Y,X_norm)) )
     print("----------------")
+    gt.graph_draw(g, pos=pos)
 
 
     # for i in range(len(hist)):

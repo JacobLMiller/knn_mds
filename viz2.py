@@ -53,25 +53,22 @@ def stress(X,d):
             stress += pow(np.linalg.norm(X[i]-X[j])-d[i][j],2)
     return pow(stress,0.5)
 
-with open('data/random_graphs1.pkl', 'rb') as myfile:
+with open('data/lg_tsnet_graphs1.pkl', 'rb') as myfile:
     data = pickle.load(myfile)
 
-with open('data/sgd_random_graphs1.pkl','rb') as myfile:
+with open('data/sgd_tsnet_graphs.pkl','rb') as myfile:
     sgd_data = pickle.load(myfile)
 
-with open('data/tsnet_random_graphs1.pkl','rb') as myfile:
+with open('data/tsnet_tsnet_graphs.pkl','rb') as myfile:
     tsnet_data = pickle.load(myfile)
 
-print(sgd_data.keys())
+print(data.keys())
 
-graph = data['powerlaw300']
-print(graph)
+
 
 metric = 'stress'
 
-#tsnet = graph['tsnet'][metric]
-#SGD = graph['SGD'][metric]
-LG_low = graph[metric]
+
 
 
 
