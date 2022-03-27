@@ -17,61 +17,6 @@ norm = np.linalg.norm
 def norm_grad(x):
     return x/norm(x)
 
-#@jit(nopython=True)
-def grad_stress(u,v,dij,w,step,n):
-    pq = u-v
-    mag = np.sqrt(pq[0]*pq[0] + pq[1]*pq[1])
-    mag_grad = pq/mag
-
-    #w = 1/(dij**2)
-    mu = step*w
-    if mu >= 1: mu = 1
-
-    r = (mu*(mag-dij))/(2*mag)
-    stress = r*pq
-
-    mu1 = step if step < 1 else 1
-    repulsion = -((step/mag) * mag_grad)
-    # if mag > 3*diam:
-    #     repulsion *= 1
-    #
-    l_sum = 1+0.01
-    m = (1/l_sum)*stress + (0.5/l_sum)*repulsion
-    return m
-
-
-#@jit(nopython=True)
-def iteration(X,w,d,indices,t,step,n):
-    max_change = 10
-    #if step >= 1: step = 1
-    for i,j in indices:
-        #old = np.linalg.norm(X[i]-X[j])
-        pq = X[i]-X[j]
-        mag = np.sqrt(pq[0]*pq[0] + pq[1]*pq[1])
-        mag_grad = pq/mag
-
-        #w = 1/(dij**2)
-        mu = step*w[i][j]
-        if mu >= 1: mu = 1
-
-        r = (mu*(mag-d[i][j]))/(2*mag)
-        stress = r*pq
-
-        mu1 = step if step < 1 else 1
-        repulsion = -((step/mag) * mag_grad)
-        # if mag > 3*diam:
-        #     repulsion *= 1
-        #
-        l_sum = 1+0.01
-        m = (1/l_sum)*stress + (0.5/l_sum)*repulsion
-
-        X[i] -= m
-        X[j] += m
-        #new = np.linalg.norm(X[i]-X[j])
-        #max_change = max(max_change, abs(new-old))
-
-    return X,max_change
-
 @jit(nopython=True,cache=True)
 def sgd(X,d,w,indices,schedule,t,tol):
     shuffle = np.random.shuffle
@@ -85,7 +30,7 @@ def sgd(X,d,w,indices,schedule,t,tol):
             #Get difference vector
             pq = X[i]-X[j]
 
-            #Calculate its magnitude (numpys implementation was soooooo slowwwwww on the testing machine)
+            #Calculate its magnitude (numpys implementation was soooooo slowwwwww on my poor laptop at least)
             mag = (pq[0]*pq[0] + pq[1]*pq[1]) ** 0.5
 
             #derivative of eucldiean norm
@@ -137,8 +82,7 @@ def schedule_convergent(d,t_max,eps,t_maxmax):
     eta_switch = 1.0 / w_max
     for t in range(t_maxmax):
         eta = eta_max * np.exp(-lamb * t)
-        if (eta < eta_switch):
-            break
+        if (eta < eta_switch): break
 
         etas[t] = eta
 

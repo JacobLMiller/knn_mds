@@ -36,19 +36,25 @@ def get_stress(X,d):
     return stress(a=min_a.x)
 
 def get_cost(X,d,w,t):                 # Define a function
-    stress, l_sum,eps = 0, 1+t,1e-13
+    stress, l_sum,eps = 0, 1+t, 1e-13
     N = len(X)
 
     #Stress
     ss = (X * X).sum(axis=1)
     diff = ss.reshape((N, 1)) + ss.reshape((1, N)) - 2 * np.dot(X,X.T)
-    diff = np.sqrt(abs(diff+eps))
+    diff = np.sqrt(np.maximum(diff,eps))
     stress = np.sum( w * np.square(d-diff) )
 
     #repulsion
+    diff = diff + eps
+
+    # condlist = [diff<10, diff>=10]
+    # choicelist = [np.log(diff), 0]
+    # r = np.select(condlist, choicelist, 0)
+    # r = -np.sum( r )
     r = -np.sum( np.log(diff+eps) )
 
-    return (1/l_sum) * np.sum(stress) + (t/l_sum) * r
+    return ((1/l_sum) * np.sum(stress) + (t/l_sum) * r) / N **2
 
 
 def get_neighborhood(X,d,rg = 2):

@@ -253,8 +253,8 @@ def drive(graph,hist=False,output=None):
 
 
     Y = SGD(d,weighted=True, w = w)
-    X = Y.solve(30,debug=hist,t=0.1)
-    X = np.asarray(X)
+    X = Y.solve(15,debug=hist,t=0.1)
+    X = layout_io.normalize_layout(X)
     print('NP: {}'.format(get_neighborhood(X,d)))
     print('stress: {}'.format(get_stress(X,d)))
     #X = [x for x in X]
@@ -263,13 +263,14 @@ def drive(graph,hist=False,output=None):
     else:
         draw(G,X,output=output)
 
+if __name__ == '__main__':
 
-drive('graphs/block_2000',hist=False)
-#iterate('random_runs/block_model_200')
-#drive('graphs/dwt_419',hist=False)
-# import cProfile
-# cProfile.run('drive(\'graphs/10square\',hist=False,radius=False)')
+    drive('graphs/block_400',hist=False)
+    #iterate('random_runs/block_model_200')
+    #drive('graphs/dwt_419',hist=False)
+    # import cProfile
+    # cProfile.run('drive(\'graphs/10square\',hist=False,radius=False)')
 
-#k_curve('airlines',folder='graphs/',radius=False,n=5)
-#a_curve('test_mnist',radius=False,n=3)
-#t_curve('custom_cluster_300',radius=False,n=3)
+    #k_curve('airlines',folder='graphs/',radius=False,n=5)
+    #a_curve('test_mnist',radius=False,n=3)
+    #t_curve('custom_cluster_300',radius=False,n=3)

@@ -1,5 +1,47 @@
+from simple_driver import get_w
+from metrics import get_cost, get_neighborhood, get_stress
+from SGD_MDS2 import SGD
+
+import numpy as np
+import graph_tool.all as gt
+
+import modules.distance_matrix as distance_matrix
+import modules.layout_io as layout_io
+
+import matplotlib.pyplot as plt
+
+def iteration_exp(n,G,d,d_norm,a,graph):
+    t_max = [i for i in range(15,121,15)]
+    iteration = np.zeros(len(t_max))
+
+    k = 21
+
+    w = get_w(G,k=k,a=a)
+
+    for i in range(n):
+        for t in range(len(t_max)):
+            Y = SGD(d,weighted=True, w = w)
+            X = Y.solve(t_max[t],t=0.1)
+            #X = layout_io.normalize_layout(X)
+
+            iteration[t] += get_cost(X,d,w,0.1)
+            #iteration[t] += get_stress(X,d_norm)
+
+    iteration /= n
+
+    plt.plot(t_max,iteration)
+    plt.savefig('figures/max_iter_{}'.format(graph))
+    plt.clf()
 
 
+    return iteration
+
+
+def matrix_exp(n,G,d,d_norm):
+    d_power = [d for d in range(1,13)]
+    powers = np.zeros(len(d_power))
+
+    k = 21
 
 
 def experiment(n=5):
@@ -9,6 +51,7 @@ def experiment(n=5):
 
     path = 'example_graphs/'
     graph_paths = os.listdir(path)
+    #graph_paths = ['block_400.dot']
 
     graph_paths = list( map(lambda s: s.split('.')[0], graph_paths) )
     #graph_paths = ['custom_cluster_100']
@@ -38,6 +81,9 @@ def experiment(n=5):
         print("-----------------------------------------------------------")
 
 
-        iteration_exp(graph,G,d,d_norm,a)
-        matrix_exp(graph,G,d,d_norm)
-        alpha_exp(graph,G,d,d_norm,a)
+        graph_dict['iterations'] = iteration_exp(n,G,d,d_norm,a,graph)
+        #graph_dict['matrix_power'] = matrix_exp(n,G,d,d_norm)
+
+
+if __name__ == '__main__':
+    experiment(n=5)
