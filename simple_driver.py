@@ -272,6 +272,7 @@ def drive(graph,hist=False,output=None,k=10):
         draw(G,X,output=output)
 
 if __name__ == '__main__':
+    print('oops')
     for k in [10,22,48,74,100]:
         drive('graphs/visbrazil',k=k,output='visbrazil_k{}.png'.format(k))
 
