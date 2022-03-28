@@ -53,20 +53,20 @@ def stress(X,d):
             stress += pow(np.linalg.norm(X[i]-X[j])-d[i][j],2)
     return pow(stress,0.5)
 
-with open('data/lg_tsnet_graphs1.pkl', 'rb') as myfile:
+with open('data/lg_random_table_graphs.pkl', 'rb') as myfile:
     data = pickle.load(myfile)
 
-with open('data/sgd_tsnet_graphs.pkl','rb') as myfile:
+with open('data/sgd_random_graphs1.pkl','rb') as myfile:
     sgd_data = pickle.load(myfile)
 
-with open('data/tsnet_tsnet_graphs.pkl','rb') as myfile:
+with open('data/tsnet_random_graphs1.pkl','rb') as myfile:
     tsnet_data = pickle.load(myfile)
 
 print(data.keys())
 
 
 
-metric = 'stress'
+metric = 'NP'
 
 
 
@@ -83,12 +83,7 @@ metric = 'stress'
 
 row_labels = list(data.keys())
 row_labels.sort()
-for graph in row_labels.copy():
-    print(graph)
-    if 'custom' in graph or '1000' in graph or '1500' in graph or '100' in graph:
-        row_labels.remove(graph)
-        print(row_labels)
-print(row_labels)
+
 
 max_graph = {graph:0 for graph in row_labels}
 
@@ -98,10 +93,16 @@ cell_data = []
 count_tsnet, count_sgd = 0,0
 for row in row_labels:
     if data[row][metric][0] > 0:
-        lg_low = min(data[row][metric])
+        lg_low = data[row][metric][0]
         lg_high = data[row][metric][-1]
-        sgd = sgd_data[row][metric]
-        tsnet = tsnet_data[row][metric]
+        if row in sgd_data:
+            sgd = sgd_data[row][metric]
+        else:
+            sgd = 0
+        if row in tsnet_data:
+            tsnet = tsnet_data[row][metric]
+        else:
+            tsnet = 0
         this_row = np.array([round(lg_low,5),round(lg_high,5),round(sgd,5),round(tsnet,5)])
         cell_data.append(this_row)
         max_graph[row] = np.argmin(this_row)

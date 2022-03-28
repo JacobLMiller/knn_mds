@@ -93,7 +93,7 @@ def experiment(n=5):
             print()
             print("Iteration number ", i)
 
-            NP,stress = run_tsnet(graph,G,d,d_norm)
+            NP,stress = run_sgd(graph,G,d,d_norm)
             graph_dict[graph]['NP'] += NP
             graph_dict[graph]['stress'] += stress
 
@@ -104,7 +104,7 @@ def experiment(n=5):
         print()
         print()
 
-    with open('data/tsnet_random_graphs.pkl','wb') as myfile:
+    with open('data/sgd_random_graphs.pkl','wb') as myfile:
         pickle.dump(graph_dict,myfile)
     myfile.close()
 

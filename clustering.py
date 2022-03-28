@@ -161,13 +161,13 @@ def custom_cluster(n=100,k=5,p_in=0.99,p_out=0.01):
 
 import os
 
-path = 'tsnet-graphs/'
+path = 'random_runs/'
 graph_paths = os.listdir(path)
 
 graph_paths = list( map(lambda s: s.split('.')[0], graph_paths) )
 #graph_paths = ['custom_cluster_100']
 print(graph_paths)
-graphs = [gt.load_graph('tsnet-graphs/{}.dot'.format(graph)) for graph in graph_paths]
+graphs = [gt.load_graph('random_runs/{}.dot'.format(graph)) for graph in graph_paths]
 
 details = [ (g.num_vertices(), g.num_edges(), name) for name,g in zip(graph_paths,graphs)]
 details.sort()

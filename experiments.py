@@ -62,7 +62,7 @@ def matrix_exp(n,G,d,d_norm,graph):
     plt.plot(d_power,powers['NP'],label="NP")
     plt.suptitle(graph)
     plt.legend()
-    plt.savefig('figures/matrix_power_{}.eps'.format(graph))
+    plt.savefig('figures/update/matrix_power_{}.eps'.format(graph))
     plt.clf()
 
     return powers
@@ -168,17 +168,17 @@ def experiment(n=5):
         print("-----------------------------------------------------------")
 
         print("Iteration experiment")
-        graph_dict['iterations'] = iteration_exp(n,G,d,d_norm,a,graph)
+        #graph_dict['iterations'] = iteration_exp(n,G,d,d_norm,a,graph)
         print("Matrix power experiment")
         graph_dict['matrix_power'] = matrix_exp(n,G,d,d_norm,graph)
         print("Alpha experiment")
-        graph_dict['alpha'] = alpha_exp(n,G,d,d_norm,a,graph)
+        #graph_dict['alpha'] = alpha_exp(n,G,d,d_norm,a,graph)
         print("Epsilon experiment")
-        graph_dict['epsilon'] = epsilon_exp(n,G,d,d_norm,a,graph)
+        #graph_dict['epsilon'] = epsilon_exp(n,G,d,d_norm,a,graph)
 
-    with open('data/paramater_experiments.pkl','wb') as myfile:
-        pickle.dump(graph_dict,myfile)
-    myfile.close()
+    # with open('data/paramater_experiments.pkl','wb') as myfile:
+    #     pickle.dump(graph_dict,myfile)
+    # myfile.close()
 
 if __name__ == '__main__':
     experiment(n=5)

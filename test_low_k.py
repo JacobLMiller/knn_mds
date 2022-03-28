@@ -18,28 +18,30 @@ import gc
 
 import time
 
-def get_w(G,k=5,a=5):
-    A = gt.adjacency(G).toarray()
-    mp = np.linalg.matrix_power
-    A = sum([mp(A,i) for i in range(1,a+1)])
-    #A = np.linalg.matrix_power(A,a)
+from simple_driver import get_w
 
-    A += np.random.normal(scale=0.01,size=A.shape)
-    #A = 1-d_norm
-
-    #k = 10
-    k_nearest = [np.argpartition(A[i],-(k+1))[-(k+1):] for i in range(len(A))]
-
-    n = G.num_vertices()
-    N = 0
-    w = np.asarray([[ 0 if i != j else 0 for i in range(len(A))] for j in range(len(A))])
-    for i in range(len(A)):
-        for j in k_nearest[i]:
-            if i != j:
-                w[i][j] = 1
-                w[j][i] = 1
-
-    return w
+# def get_w(G,k=5,a=5):
+#     A = gt.adjacency(G).toarray()
+#     mp = np.linalg.matrix_power
+#     A = sum([mp(A,i) for i in range(1,a+1)])
+#     #A = np.linalg.matrix_power(A,a)
+#
+#     A += np.random.normal(scale=0.01,size=A.shape)
+#     #A = 1-d_norm
+#
+#     #k = 10
+#     k_nearest = [np.argpartition(A[i],-(k+1))[-(k+1):] for i in range(len(A))]
+#
+#     n = G.num_vertices()
+#     N = 0
+#     w = np.asarray([[ 0 if i != j else 0 for i in range(len(A))] for j in range(len(A))])
+#     for i in range(len(A)):
+#         for j in k_nearest[i]:
+#             if i != j:
+#                 w[i][j] = 1
+#                 w[j][i] = 1
+#
+#     return w
 
 def draw(G,X,output=None):
     pos = G.new_vp('vector<float>')
@@ -52,7 +54,7 @@ def draw(G,X,output=None):
 
 def calc_adj(graph,G,d,d_norm,a):
     NP,stress,times = [],[],[]
-    K = np.linspace( 10,100, 8)
+    K = [22,100,G.num_vertices()]
     for k in K:
         k = int(k) if k < G.num_vertices() else G.num_vertices()-1
         start = time.perf_counter()
@@ -65,7 +67,7 @@ def calc_adj(graph,G,d,d_norm,a):
         NP.append(get_neighborhood(X,d))
         times.append(end-start)
 
-        draw(G,X,output='drawings/random_graphs/adjacency_power/{}_k{}.png'.format(graph,k))
+        draw(G,X,output='drawings/random_graphs/{}_k{}.png'.format(graph,k))
 
 
     return np.array(NP),np.array(stress),np.array(times)
@@ -132,11 +134,12 @@ def experiment(n=5):
     import pickle
     import copy
 
-    path = 'tsnet-graphs/'
+    path = 'random_runs/'
     graph_paths = os.listdir(path)
 
     graph_paths = list( map(lambda s: s.split('.')[0], graph_paths) )
     #graph_paths = ['custom_cluster_100']
+    graph_paths = ['powerlaw300','powerlaw500','powerlaw1000','connected_watts_300','connected_watts_500','connected_watts_1000','block_model_300','block_model_500','block_model_1000']
     print(graph_paths)
 
     adjacency_len = len( np.linspace(5,100,8) )
@@ -144,7 +147,7 @@ def experiment(n=5):
     linear_len = len( np.linspace(0,1,8) )
 
     zeros = lambda s: np.zeros(s)
-    alg_dict = {'NP': zeros(adjacency_len), 'stress': zeros(adjacency_len), 'time': zeros(adjacency_len)}
+    alg_dict = {'NP': zeros(3), 'stress': zeros(3), 'time': zeros(3)}
 
 
     graph_dict = {key: copy.deepcopy(alg_dict) for key in graph_paths}
@@ -156,7 +159,7 @@ def experiment(n=5):
         d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
 
         CC = G.num_edges() // G.num_vertices()
-        a = 3 if CC < 4 else 4 if CC < 8 else 5
+        a = 4 if CC < 4 else 5 if CC < 8 else 6
 
         print("Graph: " + graph)
         print("-----------------------------------------------------------")
@@ -175,21 +178,21 @@ def experiment(n=5):
         graph_dict[graph]['stress'] /= n
         graph_dict[graph]['time'] /= n
 
-        K = np.linspace( 10,100, 8)
-        plt.plot(K, graph_dict[graph]['stress'], label="Stress")
-        plt.plot(K, graph_dict[graph]['NP'], label="NP")
-        plt.suptitle(graph)
-        plt.xlabel("k")
-        plt.legend()
-        plt.savefig('figures/adjacency_kcurve2_{}.png'.format(graph))
-        plt.clf()
+        # K = np.linspace( 10,100, 8)
+        # plt.plot(K, graph_dict[graph]['stress'], label="Stress")
+        # plt.plot(K, graph_dict[graph]['NP'], label="NP")
+        # plt.suptitle(graph)
+        # plt.xlabel("k")
+        # plt.legend()
+        # plt.savefig('figures/adjacency_kcurve2_{}.png'.format(graph))
+        # plt.clf()
 
 
 
         print()
         print()
 
-    with open('data/lg_tsnet_graphs2.pkl','wb') as myfile:
+    with open('data/lg_random_table_graphs.pkl','wb') as myfile:
         pickle.dump(graph_dict,myfile)
     myfile.close()
 

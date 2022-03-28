@@ -33,7 +33,6 @@ def get_w(G,k=5,a=5,eps=0):
             k_nearest[i][j] = A_star[j]
         if j < k:
             pass
-    print(k_nearest[0])
 
     #k_nearest = [np.argpartition(A[i],-(k+1))[-(k+1):] for i in range(len(A))]
     #print(A[0][k_nearest[0]])
@@ -274,9 +273,9 @@ def drive(graph,hist=False,output=None,k=10):
 
 if __name__ == '__main__':
     for k in [10,22,48,74,100]:
-        drive('graphs/jazz',k=k,output='jazz_k{}.png'.format(k))
+        drive('graphs/visbrazil',k=k,output='visbrazil_k{}.png'.format(k))
 
-    drive('graphs/btree9',hist=False)
+    #drive('graphs/btree9',hist=False)
     #iterate('random_runs/block_model_200')
     #drive('graphs/dwt_419',hist=False)
     # import cProfile
