@@ -263,7 +263,7 @@ def drive(graph,hist=False,output=None,k=10):
     Y = SGD(d,weighted=True, w = w)
     X = Y.solve(60,debug=hist,t=0.1)
     X = layout_io.normalize_layout(X)
-    print('NP: {}'.format(get_neighborhood(X,d,1)))
+    print('NP: {}'.format(get_neighborhood(X,d,2)))
     print('stress: {}'.format(get_stress(X,d)))
     #X = [x for x in X]
     if hist:
@@ -272,10 +272,11 @@ def drive(graph,hist=False,output=None,k=10):
         draw(G,X,output=output)
 
 if __name__ == '__main__':
-    for k in [10,22,48,74,100]:
-        drive('graphs/visbrazil',k=k,output='visbrazil_k{}.png'.format(k))
+    # for k in [10,22,48,74,100]:
+    #     drive('graphs/visbrazil',k=k,output='visbrazil_k{}.png'.format(k))
 
-    #drive('graphs/btree9',hist=False)
+    drive('graphs/mesh3e1',hist=False,k=8)
+    drive('old_experiments/old_graphs/block_model_300',hist=False,k=40)
     #iterate('random_runs/block_model_200')
     #drive('graphs/dwt_419',hist=False)
     # import cProfile

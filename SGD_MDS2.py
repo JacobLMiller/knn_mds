@@ -37,7 +37,7 @@ def sgd(X,d,w,indices,schedule,t,tol):
             mag_grad = pq/mag
 
             #get the step size
-            mu = step*w[i][j]
+            mu = (step*w[i][j]) / d[i][j] ** 2
             if mu >= 1: mu = 1
 
             #Find the distance to move both nodes as in https://github.com/jxz12/s_gd2
@@ -45,7 +45,8 @@ def sgd(X,d,w,indices,schedule,t,tol):
             stress = r*pq
 
             #repulsion step size and calculation
-            mu1 = step if step < 1 else 1
+            mu1 = (step) * d[i][j] **2
+            if mu1 >= 1: mu1 = 1
             repulsion = -mu1 * (mag_grad/mag)
 
             #Normalize so the weights sum to 1

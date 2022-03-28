@@ -56,10 +56,10 @@ def stress(X,d):
 with open('data/lg_random_table_graphs.pkl', 'rb') as myfile:
     data = pickle.load(myfile)
 
-with open('data/sgd_random_graphs1.pkl','rb') as myfile:
+with open('data/sgd_random_graphs.pkl','rb') as myfile:
     sgd_data = pickle.load(myfile)
 
-with open('data/tsnet_random_graphs1.pkl','rb') as myfile:
+with open('data/tsnet_random_graphs.pkl','rb') as myfile:
     tsnet_data = pickle.load(myfile)
 
 print(data.keys())
@@ -138,4 +138,5 @@ plt.axis('off')
 fig = plt.gcf()
 fig.set_size_inches(18.5, 10.5)
 
-plt.savefig('prelim_table_stress.eps')
+plt.show()
+#plt.savefig('prelim_table_stress.eps')
