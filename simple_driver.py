@@ -20,18 +20,30 @@ def get_w(G,k=5,a=5,eps=0):
     A = sum([mp(A,i) for i in range(1,a+1)])
     #A = np.linalg.matrix_power(A,a)
 
-    A += np.random.normal(scale=0.01,size=A.shape)
+    #A += np.random.normal(scale=0.01,size=A.shape)
     #A = 1-d_norm
 
     #k = 10
-    k_nearest = [np.argpartition(A[i],-(k+1))[-(k+1):] for i in range(len(A))]
+    B = np.argsort(A,axis=1)
+    k_nearest = [[None for _ in range(k)] for _ in range(len(A))]
+    for i in range(len(A)):
+        A_star = B[i][::-1]
+        for j in range(k):
+            if A[i][A_star[j]] == 0: break
+            k_nearest[i][j] = A_star[j]
+        if j < k:
+            pass
+    print(k_nearest[0])
+
+    #k_nearest = [np.argpartition(A[i],-(k+1))[-(k+1):] for i in range(len(A))]
+    #print(A[0][k_nearest[0]])
 
     n = G.num_vertices()
     N = 0
     w = np.asarray([[ eps if i != j else 0 for i in range(len(A))] for j in range(len(A))])
     for i in range(len(A)):
         for j in k_nearest[i]:
-            if i != j:
+            if i != j and j:
                 w[i][j] = 1
                 w[j][i] = 1
 
@@ -239,13 +251,12 @@ def iterate(graph):
     plt.plot(list(range(30,201,10)),cost,label='Cost value')
     plt.show()
 
-def drive(graph,hist=False,output=None):
+def drive(graph,hist=False,output=None,k=10):
     G = gt.load_graph("{}.dot".format(graph))
     d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
     d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
 
-    a = 8
-    k = 10
+    a = 5
 
     w = get_w(G,k=k,a=a)
 
@@ -262,8 +273,10 @@ def drive(graph,hist=False,output=None):
         draw(G,X,output=output)
 
 if __name__ == '__main__':
+    for k in [10,22,48,74,100]:
+        drive('graphs/jazz',k=k,output='jazz_k{}.png'.format(k))
 
-    drive('graphs/oscil',hist=False)
+    drive('graphs/btree9',hist=False)
     #iterate('random_runs/block_model_200')
     #drive('graphs/dwt_419',hist=False)
     # import cProfile

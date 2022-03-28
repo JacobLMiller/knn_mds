@@ -16,6 +16,8 @@ import matplotlib.pyplot as plt
 
 import gc
 
+import time
+
 def get_w(G,k=5,a=5):
     A = gt.adjacency(G).toarray()
     mp = np.linalg.matrix_power
@@ -49,21 +51,24 @@ def draw(G,X,output=None):
         gt.graph_draw(G,pos=pos)
 
 def calc_adj(graph,G,d,d_norm,a):
-    NP,stress = [],[]
+    NP,stress,times = [],[],[]
     K = np.linspace( 10,100, 8)
     for k in K:
         k = int(k) if k < G.num_vertices() else G.num_vertices()-1
+        start = time.perf_counter()
         w = get_w(G,k=k,a=a)
         Y = SGD(d,w=w,weighted=True)
         X = Y.solve(60,t=0.1)
+        end = time.perf_counter()
         X = layout_io.normalize_layout(X)
         stress.append(get_stress(X,d_norm))
         NP.append(get_neighborhood(X,d))
+        times.append(end-start)
 
         draw(G,X,output='drawings/random_graphs/adjacency_power/{}_k{}.png'.format(graph,k))
 
 
-    return np.array(NP),np.array(stress)
+    return np.array(NP),np.array(stress),np.array(times)
 
 def calc_radius(graph,G,d,d_norm):
     NP,stress = [],[]
@@ -127,12 +132,11 @@ def experiment(n=5):
     import pickle
     import copy
 
-    path = 'random_runs/'
+    path = 'tsnet-graphs/'
     graph_paths = os.listdir(path)
 
     graph_paths = list( map(lambda s: s.split('.')[0], graph_paths) )
     #graph_paths = ['custom_cluster_100']
-    graph_paths = graph_paths[9:]
     print(graph_paths)
 
     adjacency_len = len( np.linspace(5,100,8) )
@@ -140,7 +144,7 @@ def experiment(n=5):
     linear_len = len( np.linspace(0,1,8) )
 
     zeros = lambda s: np.zeros(s)
-    alg_dict = {'NP': zeros(adjacency_len), 'stress': zeros(adjacency_len)}
+    alg_dict = {'NP': zeros(adjacency_len), 'stress': zeros(adjacency_len), 'time': zeros(adjacency_len)}
 
 
     graph_dict = {key: copy.deepcopy(alg_dict) for key in graph_paths}
@@ -161,13 +165,15 @@ def experiment(n=5):
             print()
             print("Iteration number ", i)
 
-            NP,stress = calc_adj(graph,G,d,d_norm,a)
+            NP,stress,time = calc_adj(graph,G,d,d_norm,a)
             graph_dict[graph]['NP'] += NP
             graph_dict[graph]['stress'] += stress
+            graph_dict[graph]['time'] += time
 
 
         graph_dict[graph]['NP'] /= n
         graph_dict[graph]['stress'] /= n
+        graph_dict[graph]['time'] /= n
 
         K = np.linspace( 10,100, 8)
         plt.plot(K, graph_dict[graph]['stress'], label="Stress")
@@ -183,7 +189,7 @@ def experiment(n=5):
         print()
         print()
 
-    with open('data/lg_random_graphs2.pkl','wb') as myfile:
+    with open('data/lg_tsnet_graphs2.pkl','wb') as myfile:
         pickle.dump(graph_dict,myfile)
     myfile.close()
 

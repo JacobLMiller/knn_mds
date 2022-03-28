@@ -112,21 +112,21 @@ def custom_cluster(n=100,k=5,p_in=0.99,p_out=0.01):
 # print(gt.vertex_average(G,clust))
 # G.save('graphs/test_mnist.dot')
 
-import os
-graph_paths = os.listdir('graphs/')
-
-# for graph in graph_paths:
-#     G = gt.load_graph('graphs/{}'.format(graph))
-#     clust = gt.local_clustering(G)
-#     print("Graph: {}, CC: {}".format(graph, gt.vertex_average(G,clust)) )
-
-for i in [100,200,300,400,500,700,1000,1500]:
-    G,bm = block_model(n=i)
-    CC = gt.local_clustering(G)
-    G.vertex_properties['block'] = bm
-
-    G.save('random_runs/block_model_{}.dot'.format(i))
-
+# import os
+# graph_paths = os.listdir('graphs/')
+#
+# # for graph in graph_paths:
+# #     G = gt.load_graph('graphs/{}'.format(graph))
+# #     clust = gt.local_clustering(G)
+# #     print("Graph: {}, CC: {}".format(graph, gt.vertex_average(G,clust)) )
+#
+# for i in [100,200,300,400,500,700,1000,1500]:
+#     G,bm = block_model(n=i)
+#     CC = gt.local_clustering(G)
+#     G.vertex_properties['block'] = bm
+#
+#     G.save('random_runs/block_model_{}.dot'.format(i))
+#
 
 
 # for n in [200]:
@@ -146,14 +146,30 @@ for i in [100,200,300,400,500,700,1000,1500]:
 #             G.save('random_runs/powerlaw{}.dot'.format(n))
 #             bad = False
 
-G = gt.load_graph('random_runs/powerlaw300.dot')
-clust = gt.local_clustering(G)
-print("Graph: {}, CC: {}".format("powerlaw300", gt.vertex_average(G,clust)) )
+# G = gt.load_graph('random_runs/powerlaw300.dot')
+# clust = gt.local_clustering(G)
+# print("Graph: {}, CC: {}".format("powerlaw300", gt.vertex_average(G,clust)) )
+#
+# G = gt.load_graph('random_runs/connected_watts_300.dot')
+# clust = gt.local_clustering(G)
+# print("Graph: {}, CC: {}".format("connected_watts_300", gt.vertex_average(G,clust)) )
+#
+# import gc
+#
+# print(gc.garbage)
 
-G = gt.load_graph('random_runs/connected_watts_300.dot')
-clust = gt.local_clustering(G)
-print("Graph: {}, CC: {}".format("connected_watts_300", gt.vertex_average(G,clust)) )
 
-import gc
+import os
 
-print(gc.garbage)
+path = 'tsnet-graphs/'
+graph_paths = os.listdir(path)
+
+graph_paths = list( map(lambda s: s.split('.')[0], graph_paths) )
+#graph_paths = ['custom_cluster_100']
+print(graph_paths)
+graphs = [gt.load_graph('tsnet-graphs/{}.dot'.format(graph)) for graph in graph_paths]
+
+details = [ (g.num_vertices(), g.num_edges(), name) for name,g in zip(graph_paths,graphs)]
+details.sort()
+for x in details:
+    print(x)
