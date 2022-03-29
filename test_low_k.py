@@ -134,12 +134,12 @@ def experiment(n=5):
     import pickle
     import copy
 
-    path = 'random_runs/'
+    path = 'table_graphs/'
     graph_paths = os.listdir(path)
 
     graph_paths = list( map(lambda s: s.split('.')[0], graph_paths) )
     #graph_paths = ['custom_cluster_100']
-    graph_paths = ['powerlaw300','powerlaw500','powerlaw1000','connected_watts_300','connected_watts_500','connected_watts_1000','block_model_300','block_model_500','block_model_1000']
+    #graph_paths = ['powerlaw300','powerlaw500','powerlaw1000','connected_watts_300','connected_watts_500','connected_watts_1000','block_model_300','block_model_500','block_model_1000']
     print(graph_paths)
 
     adjacency_len = len( np.linspace(5,100,8) )
@@ -157,6 +157,7 @@ def experiment(n=5):
         G = gt.load_graph(path+graph + '.dot')
         d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
         d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
+        if G.num_vertices() <= 1010: continue
 
         CC = G.num_edges() // G.num_vertices()
         a = 4 if CC < 4 else 5 if CC < 8 else 6
@@ -192,7 +193,7 @@ def experiment(n=5):
         print()
         print()
 
-    with open('data/lg_random_table_graphs.pkl','wb') as myfile:
+    with open('data/lg_random_table_graphs_large.pkl','wb') as myfile:
         pickle.dump(graph_dict,myfile)
     myfile.close()
 

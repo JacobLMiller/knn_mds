@@ -53,7 +53,7 @@ def stress(X,d):
             stress += pow(np.linalg.norm(X[i]-X[j])-d[i][j],2)
     return pow(stress,0.5)
 
-with open('data/lg_random_table_graphs.pkl', 'rb') as myfile:
+with open('push_data/lg_random_graphs1.pkl', 'rb') as myfile:
     data = pickle.load(myfile)
 
 with open('data/sgd_random_graphs.pkl','rb') as myfile:
@@ -138,5 +138,19 @@ plt.axis('off')
 fig = plt.gcf()
 fig.set_size_inches(18.5, 10.5)
 
-plt.show()
+#plt.show()
 #plt.savefig('prelim_table_stress.eps')
+
+plt.clf()
+
+graphs = list(data.keys())
+consider = graphs[6]
+X = data[consider]['NP']
+Y = data[consider]['stress']
+print(consider)
+print(X)
+
+plt.plot(X,Y)
+plt.xlim(0,1)
+plt.ylim(0,1)
+plt.show()

@@ -59,7 +59,7 @@ def experiment(n=5):
     import pickle
     import copy
 
-    path = 'random_runs/'
+    path = 'table_graphs/'
     graph_paths = os.listdir(path)
 
     graph_paths = list( map(lambda s: s.split('.')[0], graph_paths) )
@@ -81,7 +81,7 @@ def experiment(n=5):
         G = gt.load_graph(path+graph + '.dot')
         d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
         d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
-        #if G.num_vertices() > 999: continue
+        if G.num_vertices() <= 1010: continue
 
         CC,_ = gt.global_clustering(G)
         a = 2 if CC < 0.1 else 3 if CC < 0.4 else 4 if CC < 0.6 else 5
@@ -93,7 +93,7 @@ def experiment(n=5):
             print()
             print("Iteration number ", i)
 
-            NP,stress = run_sgd(graph,G,d,d_norm)
+            NP,stress = run_tsnet(graph,G,d,d_norm)
             graph_dict[graph]['NP'] += NP
             graph_dict[graph]['stress'] += stress
 
@@ -104,7 +104,7 @@ def experiment(n=5):
         print()
         print()
 
-    with open('data/sgd_random_graphs.pkl','wb') as myfile:
+    with open('data/tsnet_table_graphs_large.pkl','wb') as myfile:
         pickle.dump(graph_dict,myfile)
     myfile.close()
 

@@ -232,22 +232,26 @@ def iterate(graph):
     a = 5
     k = 10
 
-    K = np.linspace( 5,G.num_vertices()-1, 8)
+    K = list(range(10,101,10))
 
-    w = get_w(G,k=k,a=a)
 
-    cost = []
 
-    for t in range(30,201,10):
+    cost,NP,stress = [],[],[]
+
+    for k in K:
+        w = get_w(G,k=k,a=a)
         Y = SGD(d,weighted=True, w = w)
-        X = Y.solve(t,debug=False,t=0.1)
+        X = Y.solve(60,debug=False,t=0.1)
 
-        print('NP: {}'.format(get_neighborhood(X,d)))
-        print('stress: {}'.format(get_stress(X,d)))
-        draw(G,X,output='test{}.png'.format(t))
+        NP.append(get_neighborhood(X,d))
+        stress.append(get_stress(X,d))
+        draw(G,X,output='test{}.png'.format(k))
         cost.append(get_cost(X,d,w,0.1))
 
-    plt.plot(list(range(30,201,10)),cost,label='Cost value')
+    plt.plot(NP,stress,marker='o')
+    for xy in zip(NP,stress):                                       # <--
+        plt.annotate('(%s, %s)' % xy, xy=xy, textcoords='data') # <--
+
     plt.show()
 
 def drive(graph,hist=False,output=None,k=10):
@@ -275,9 +279,9 @@ if __name__ == '__main__':
     # for k in [10,22,48,74,100]:
     #     drive('graphs/visbrazil',k=k,output='visbrazil_k{}.png'.format(k))
 
-    drive('graphs/mesh3e1',hist=False,k=8)
-    drive('old_experiments/old_graphs/block_model_300',hist=False,k=40)
-    #iterate('random_runs/block_model_200')
+    # drive('graphs/mesh3e1',hist=False,k=8)
+    # drive('old_experiments/old_graphs/block_model_300',hist=False,k=40)
+    iterate('random_runs/block_model_300')
     #drive('graphs/dwt_419',hist=False)
     # import cProfile
     # cProfile.run('drive(\'graphs/10square\',hist=False,radius=False)')
