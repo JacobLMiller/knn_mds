@@ -1,200 +1,63 @@
-import cProfile
-import Test2
-#cProfile.run('Test2.example()')
 import numpy as np
-import timeit
+import matplotlib.pyplot as plt
+import pickle
 
 
 n = 5
 
-u,v = np.random.uniform(0,1,2), np.random.uniform(0,1,2)
-nonumpy = lambda: (sum( ((u[0]-v[0])**2, (u[1]-v[1])**2) )) ** 0.5
+#1f77b4', '#aec7e8', '#ff7f0e'
 
-import itertools
-indices = list(itertools.combinations(range(n), 2))
-lis = [i for i in range(len(indices))]
+with open('push_data/lg_random_graphs1.pkl', 'rb') as myfile:
+    data = pickle.load(myfile)
 
-print(type(indices))
-print(len(indices))
+with open('push_data/sgd_random_graphs1.pkl', 'rb') as myfile:
+    sgd = pickle.load(myfile)
 
-norm = np.linalg.norm
+with open('push_data/tsnet_random_graphs1.pkl', 'rb') as myfile:
+    tsnet = pickle.load(myfile)
 
+graph = 'connected_watts_700'
+NP = data[graph]['NP']
+stress = data[graph]['stress']
 
-from numba import jit
+X = [i for i in range(len(NP))]
 
-@jit(nopython=True)
-def np_jit(n):
-    x = np.random.uniform(0,1,(n,2))
+cat = np.concatenate((NP,stress))
+bottom = 0
+top = 1
 
-    i,j = 3,4
-    for _ in range(30):
-        y = norm(x[i]-x[j])
-
-
-def np_norm(n):
-    #d = np.random.uniform(0,1,(n,n))
-    x = np.random.uniform(0,1,(n,2))
-
-    i,j = 3,4
-    for _ in range(30):
-        y = norm(x[i]-x[j])
-
-def np_norm_loaded(n):
-    #d = np.random.uniform(0,1,(n,n))
-    x = np.random.uniform(0,1,(n,2))
-    i,j = 3,4
-    for _ in range(30):
-        y = norm(x[i]-x[j])
-
-def custom(n):
-    x = [ [random.random(),random.random()] for _ in range(n)]
-    i,j = 3,4
-    for _ in range(30):
-        y = (sum( ((x[i][0]-x[j][0])**2, (x[i][1]-x[j][1])**2) )) ** 0.5
+fig, ax1 = plt.subplots()
+ax1.plot(X, NP, 'o-',color='#ff7f0e',label='NP')
+ax1.set_ylabel('NP', color='#ff7f0e')
+ax1.tick_params('y', colors='#ff7f0e')
+ax1.set_ylim(bottom,top)
 
 
-import random
-def custom2():
-    x = [random.random() for _ in range(2*n)]
-    i,j = 1,2
-    for _ in range(10):
-        y = (sum( ((x[2*i]-x[2*j])**2, (x[2*i+1]-x[2*j+1])**2) )) ** 0.5
-
-
-norm = np.linalg.norm
-import itertools
-#@jit(nopython=True,cache=True)
-def full_norm(n):
-    shuffle = np.random.shuffle
-    randint = random.randint
-    indices = list(itertools.combinations(range(n), 2))
-
-    X = np.random.uniform(0,1,(n,2))
-    d = np.random.uniform(0,1,(n,n))
-    w = np.ones(d.shape)
-    step = 0.001
-
-    for epoch in range(30):
-
-        change = 10
-
-        for i,j in indices:
-
-            pq = X[i]-X[j]
-            mag = norm(pq)
-            mag_grad = pq/mag
-
-
-            mu = step*w[i][j]
-            if mu >= 1: mu = 1
-
-            r = (mu*(mag-d[i][j]))/(2*mag)
-            stress = r*pq
-
-            mu1 = step if step < 1 else 1
-            repulsion = -((step/mag) * mag_grad)
-
-            l_sum = 1+0.01
-            m = (1/l_sum)*stress + (0.01/l_sum)*repulsion
-
-            X[i] -= m
-            X[j] += m
-
-        shuffle(indices)
-
-from math import sqrt
-#@jit(nopython=True,cache=True)
-def full_custom(n):
-
-    shuffle = np.random.shuffle
-    randint = random.randint
-    indices = list(itertools.combinations(range(n), 2))
-
-    X = np.random.uniform(0,1,(n,2))
-    d = np.random.uniform(0,1,(n,n))
-    w = np.ones(d.shape)
-    step = 0.001
-    for epoch in range(30):
-
-        change = 10
-
-        for i,j in indices:
-
-            #old = np.linalg.norm(X[i]-X[j])
-            #pq = X[i]-X[j]
-            #square = pq ** 2
-            mag = ( (X[i][0]-X[j][0])**2 + (X[i][1]-X[j][1])**2) ** 0.5
-            #mag = norm(pq)
-            #mag_grad = pq/mag
-            dx = (X[i][0]-X[j][0])/mag
-            dy = (X[i][1]-X[j][1])/mag
-
-            #w = 1/(dij**2)
-            mu = step*w[i][j]
-            if mu >= 1: mu = 1
-
-            r = (mu*(mag-d[i][j]))/(2*mag)
-            stressx = r*dx
-            stressy = r*dy
-
-            mu1 = step if step < 1 else 1
-            repulsionx = -((step/mag) * dx)
-            repulsiony = -((step/mag) * dy)
-
-            l_sum = 1+0.01
-            mx = (1/l_sum)*stressx + (0.01/l_sum)*repulsionx
-            my = (1/l_sum)*stressy + (0.01/l_sum)*repulsiony
-
-            X[i][0] -= mx
-            X[i][1] -= my
-            X[j][0] += mx
-            X[j][1] += my
-
-        shuffle(indices)
+ax2 = ax1.twinx()
+ax2.plot(X, stress, 'o-',color='#1f77b4',label='stress')
+ax2.plot(X,np.ones(stress.shape)*sgd[graph]['stress'],'--',color='green',label='MDS')
+ax2.set_xlabel('k')
+# Make the y-axis label, ticks and tick labels match the line color.
+ax2.set_ylabel('stress', color='#1f77b4')
+ax2.set_ylim(bottom,top)
+ax2.tick_params('y', colors='#1f77b4')
 
 
 
+fig.legend()
 
-def timing(n):
-    setup = '''
-import numpy as np
-from __main__ import full_custom
-    '''
+#fig.tight_layout()
+plt.show()
 
-    loop = '''
-full_custom(n={})
-    '''.format(n)
+plt.clf()
 
-    number = 10
-    import timeit
-    hit = timeit.timeit(setup=setup,
-                        stmt=loop,number=number)
-    print(hit/number)
-    return hit/number
+plt.plot(NP,stress,'o-',label='local-global')
+plt.plot(sgd[graph]['NP'],sgd[graph]['stress'],'o',label='MDS')
+plt.plot(tsnet[graph]['NP'],tsnet[graph]['stress'],'o',label='tsNET')
+plt.xlabel('NP')
+plt.ylabel('stress')
+plt.xlim(0,1)
+plt.ylim(0,1)
+plt.legend()
 
-def timing2(n):
-    setup = '''
-import numpy as np
-from __main__ import full_norm
-    '''
-
-    loop = '''
-full_norm(n={})
-    '''.format(n)
-
-    number = 100
-    import timeit
-    hit = timeit.timeit(setup=setup,
-                        stmt=loop,number=number)
-    print(hit/number)
-    return hit/number
-
-if __name__ == "__main__":
-    toplot = [timing(n) for n in range(10,1000,100)]
-    toplot2 = [timing2(n) for n in range(10,1000,100)]
-    import matplotlib.pyplot as plt
-    plt.suptitle("with jit")
-    plt.plot(list(range(10,1000,100)), toplot,label='custom')
-    plt.plot(list(range(10,1000,100)), toplot2,label='numpy')
-    plt.legend()
-    plt.show()
+plt.show()

@@ -29,8 +29,10 @@ def iteration_exp(n,G,d,d_norm,a,graph):
 
     iteration /= n
 
-    plt.plot(t_max,iteration,label='Cost function')
-    plt.suptitle(graph)
+    plt.plot(t_max,iteration,'g-',label='Cost function')
+    plt.suptitle("Maximum iteration experiment on {}".format(graph))
+    plt.xlabel("Max_iter")
+    plt.ylabel("Cost value")
     plt.legend()
     plt.savefig('figures/max_iter_{}.eps'.format(graph))
     plt.clf()
@@ -58,12 +60,15 @@ def matrix_exp(n,G,d,d_norm,graph):
     powers['NP'] /= n
     powers['stress'] /= n
 
-    plt.plot(d_power,powers['stress'],label="stress")
+    plt.plot(d_power,powers['stress'],'co-',label="stress")
     plt.plot(d_power,powers['NP'],label="NP")
     plt.suptitle(graph)
+    plt.xlabel("d")
+    plt.ylabel("")
     plt.legend()
     plt.savefig('figures/update/matrix_power_{}.eps'.format(graph))
     plt.clf()
+
 
     return powers
 
@@ -72,7 +77,7 @@ def alpha_exp(n,G,d,d_norm,a,graph):
     alphas = np.linspace(0,1,12)
     alpha = {'NP': np.zeros(len(alphas)), 'stress': np.zeros(len(alphas))}
 
-    k = 21
+    k = 10
     w = get_w(G,k=k,a=a)
 
     for i in range(n):
@@ -136,12 +141,12 @@ def experiment(n=5):
     import pickle
     import copy
 
-    path = 'example_graphs/'
+    path = 'table_graphs/'
     graph_paths = os.listdir(path)
     #graph_paths = ['block_model300.dot']
 
     graph_paths = list( map(lambda s: s.split('.')[0], graph_paths) )
-    #graph_paths = ['custom_cluster_100']
+    graph_paths = ['netscience','block_model_500']
     print(graph_paths)
 
     adjacency_len = len( np.linspace(5,100,8) )
@@ -163,22 +168,23 @@ def experiment(n=5):
 
         CC = G.num_edges() // G.num_vertices()
         a = 3 if CC < 4 else 4 if CC < 8 else 5
+        a=4
 
         print("Graph: " + graph)
         print("-----------------------------------------------------------")
 
         print("Iteration experiment")
-        #graph_dict['iterations'] = iteration_exp(n,G,d,d_norm,a,graph)
+        graph_dict['iterations'] = iteration_exp(n,G,d,d_norm,a,graph)
         print("Matrix power experiment")
         graph_dict['matrix_power'] = matrix_exp(n,G,d,d_norm,graph)
         print("Alpha experiment")
-        #graph_dict['alpha'] = alpha_exp(n,G,d,d_norm,a,graph)
+        graph_dict['alpha'] = alpha_exp(n,G,d,d_norm,a,graph)
         print("Epsilon experiment")
-        #graph_dict['epsilon'] = epsilon_exp(n,G,d,d_norm,a,graph)
+        graph_dict['epsilon'] = epsilon_exp(n,G,d,d_norm,a,graph)
 
-    # with open('data/paramater_experiments.pkl','wb') as myfile:
-    #     pickle.dump(graph_dict,myfile)
-    # myfile.close()
+    with open('data/paramater_experiments1.pkl','wb') as myfile:
+        pickle.dump(graph_dict,myfile)
+    myfile.close()
 
 if __name__ == '__main__':
-    experiment(n=5)
+    experiment(n=15)

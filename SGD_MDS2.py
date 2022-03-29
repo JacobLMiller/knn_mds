@@ -64,6 +64,7 @@ def sgd(X,d,w,indices,schedule,t,tol):
             newmag = (newpq[0]*newpq[0] + newpq[1]*newpq[1]) ** 0.5
             change = max(change,abs(mag-newmag))
 
+
         if change < tol: break
         shuffle(indices)
         #print("Epoch: " + str(epoch))

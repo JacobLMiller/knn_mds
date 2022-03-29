@@ -53,20 +53,20 @@ def stress(X,d):
             stress += pow(np.linalg.norm(X[i]-X[j])-d[i][j],2)
     return pow(stress,0.5)
 
-with open('push_data/lg_random_graphs1.pkl', 'rb') as myfile:
+with open('push_data/lg_random_table_graphs.pkl', 'rb') as myfile:
     data = pickle.load(myfile)
 
-with open('data/sgd_random_graphs.pkl','rb') as myfile:
+with open('push_data/sgd_table_graphs.pkl','rb') as myfile:
     sgd_data = pickle.load(myfile)
 
-with open('data/tsnet_random_graphs.pkl','rb') as myfile:
+with open('push_data/tsnet_table_graphs.pkl','rb') as myfile:
     tsnet_data = pickle.load(myfile)
 
 print(data.keys())
 
 
 
-metric = 'NP'
+metric = 'stress'
 
 
 
@@ -82,18 +82,28 @@ metric = 'NP'
 # plt.clf()
 
 row_labels = list(data.keys())
-row_labels.sort()
+print(data[row_labels[2]].keys())
 
+row_labels.sort()
+row_labels = ['can_96', 'football', 'jazz', 'visbrazil', 'mesh3e1', 'powerlaw300','block_model_300']
+
+graphs = np.array([gt.load_graph("table_graphs/{}.dot".format(row)).num_vertices() for row in row_labels])
+sort_graphs = np.argsort(graphs)
+row_labels = [row_labels[i] for i in sort_graphs]
 
 max_graph = {graph:0 for graph in row_labels}
 
-column_labels = ["LG,k=18","LG,k= |V|", 'SGD', 'tsNET']
+column_labels = ["LG,k=18","LG,k= |V|", 'SGD', 'tsNET','filler']
+
+table_string = ""
+ismin = lambda score,m: "{}".format(round(score,4)) if not m else "{}\\bf {} {}".format('{',round(score,4),'}')
 
 cell_data = []
 count_tsnet, count_sgd = 0,0
 for row in row_labels:
     if data[row][metric][0] > 0:
         lg_low = data[row][metric][0]
+        lg_mid = data[row][metric][1]
         lg_high = data[row][metric][-1]
         if row in sgd_data:
             sgd = sgd_data[row][metric]
@@ -103,12 +113,19 @@ for row in row_labels:
             tsnet = tsnet_data[row][metric]
         else:
             tsnet = 0
-        this_row = np.array([round(lg_low,5),round(lg_high,5),round(sgd,5),round(tsnet,5)])
+        this_row = np.array([tsnet,lg_low,lg_mid,lg_high,sgd])
         cell_data.append(this_row)
-        max_graph[row] = np.argmin(this_row)
+        min_row = np.argmin(this_row)
+        split = row.split("_")
+        format = [b + "\_" for b in split[:-1] ] + [split[-1]] if len(split) > 1 else split
+        format = "".join(format)
+        row_string = "{graph} & {t_score} & {L_s} & {L_m} & {L_l} & {M} \\\ \n".format(graph=format, t_score=ismin(tsnet,0==min_row), L_s=ismin(lg_low,1==min_row), L_m=ismin(lg_mid,2==min_row),L_l=ismin(lg_high,3==min_row), M=ismin(sgd,4==min_row))
+        print(row_string)
+        table_string += row_string + '\\hline \n'
     else:
         cell_data.append([0,0,0,0])
 
+print(table_string)
 print("low performed better on ", count_tsnet)
 print("hgih performed better on ", count_sgd)
 
@@ -117,16 +134,16 @@ table = plt.table(cellText=cell_data,
                       rowLabels=row_labels,
                       colLabels=column_labels,
                       loc='center',
-                      colWidths=[0.2,0.2,0.2,0.2],
+                      colWidths=[0.2,0.2,0.2,0.2,0.2],
                       cellLoc='center')
 
 import matplotlib.pyplot as plt
 from matplotlib.font_manager import FontProperties
 
 for (row, col), cell in table.get_celld().items():
-    print(row)
-    print(row_labels[row-1])
-    print()
+    # print(row)
+    # print(row_labels[row-1])
+    # print()
     if row == 0: continue
     if (max_graph[row_labels[row-1]] == col):
         cell.set_text_props(fontproperties=FontProperties(weight='bold'))
@@ -143,14 +160,39 @@ fig.set_size_inches(18.5, 10.5)
 
 plt.clf()
 
-graphs = list(data.keys())
-consider = graphs[6]
-X = data[consider]['NP']
-Y = data[consider]['stress']
-print(consider)
-print(X)
+from matplotlib import pyplot as plt
+import numpy as np
+randn = np.random.randn
+from pandas import *
 
-plt.plot(X,Y)
-plt.xlim(0,1)
-plt.ylim(0,1)
+import matplotlib.cm as cm
+fig, ax = plt.subplots()
+
+rows = ['%d nodes' % x for x in (10, 30, 50, 75, 100)]
+columns=['TP', 'TN', 'FP', 'FN']
+
+conf_data = np.array(
+[[ 230,  847,  784,  208],
+ [ 156, 1240,  391,  282],
+ [ 146, 1212,  419,  292],
+ [ 130, 1148,  483,  308],
+ [ 122, 1173,  458,  316]]
+)
+
+colores = np.zeros((conf_data.shape[0], conf_data.shape[1], 4))
+for i in range(conf_data.shape[0]):
+    col_data = conf_data[:, i]
+    normal = plt.Normalize(np.min(col_data), np.max(col_data))
+    colores[i,:] = cm.Reds(normal(col_data))
+
+#fig.patch.set_visible(False)
+ax.axis('off')
+ax.axis('tight')
+ax.table(cellText=conf_data,
+         rowLabels=rows,
+         colLabels=columns,
+         cellColours=colores,
+         loc='center',
+         colWidths=[0.1 for x in columns])
+fig.tight_layout()
 plt.show()

@@ -253,6 +253,11 @@ def iterate(graph):
         plt.annotate('(%s, %s)' % xy, xy=xy, textcoords='data') # <--
 
     plt.show()
+    plt.clf()
+
+    plt.plot(K,stress)
+    plt.plot(K,NP)
+    plt.show()
 
 def drive(graph,hist=False,output=None,k=10):
     G = gt.load_graph("{}.dot".format(graph))
@@ -265,7 +270,7 @@ def drive(graph,hist=False,output=None,k=10):
 
 
     Y = SGD(d,weighted=True, w = w)
-    X = Y.solve(60,debug=hist,t=0.1)
+    X = Y.solve(60,debug=hist,t=0.6)
     X = layout_io.normalize_layout(X)
     print('NP: {}'.format(get_neighborhood(X,d,2)))
     print('stress: {}'.format(get_stress(X,d)))
@@ -280,8 +285,8 @@ if __name__ == '__main__':
     #     drive('graphs/visbrazil',k=k,output='visbrazil_k{}.png'.format(k))
 
     # drive('graphs/mesh3e1',hist=False,k=8)
-    # drive('old_experiments/old_graphs/block_model_300',hist=False,k=40)
-    iterate('random_runs/block_model_300')
+    drive('random_runs/connected_watts_300',hist=False,k=22)
+    #iterate('random_runs/connected_watts_300')
     #drive('graphs/dwt_419',hist=False)
     # import cProfile
     # cProfile.run('drive(\'graphs/10square\',hist=False,radius=False)')
