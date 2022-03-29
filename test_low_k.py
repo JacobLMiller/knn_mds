@@ -54,7 +54,7 @@ def draw(G,X,output=None):
 
 def calc_adj(graph,G,d,d_norm,a):
     NP,stress,times = [],[],[]
-    K = [22,100,G.num_vertices()]
+    K = np.linspace(22,100,8)
     for k in K:
         k = int(k) if k < G.num_vertices() else G.num_vertices()-1
         start = time.perf_counter()
@@ -67,7 +67,7 @@ def calc_adj(graph,G,d,d_norm,a):
         NP.append(get_neighborhood(X,d))
         times.append(end-start)
 
-        draw(G,X,output='drawings/random_graphs/{}_k{}.png'.format(graph,k))
+        draw(G,X,output='drawings/random_graphs/recent/{}_k{}.png'.format(graph,k))
 
 
     return np.array(NP),np.array(stress),np.array(times)
@@ -147,7 +147,7 @@ def experiment(n=5):
     linear_len = len( np.linspace(0,1,8) )
 
     zeros = lambda s: np.zeros(s)
-    alg_dict = {'NP': zeros(3), 'stress': zeros(3), 'time': zeros(3)}
+    alg_dict = {'NP': zeros(8), 'stress': zeros(8), 'time': zeros(8)}
 
 
     graph_dict = {key: copy.deepcopy(alg_dict) for key in graph_paths}
@@ -157,7 +157,7 @@ def experiment(n=5):
         G = gt.load_graph(path+graph + '.dot')
         d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
         d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
-        if G.num_vertices() <= 1010: continue
+        if G.num_vertices() > 1010: continue
 
         CC = G.num_edges() // G.num_vertices()
         a = 4 if CC < 4 else 5 if CC < 8 else 6
@@ -193,7 +193,7 @@ def experiment(n=5):
         print()
         print()
 
-    with open('data/lg_random_table_graphs_large.pkl','wb') as myfile:
+    with open('data/lg_table_plots.pkl','wb') as myfile:
         pickle.dump(graph_dict,myfile)
     myfile.close()
 

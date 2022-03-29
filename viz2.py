@@ -53,20 +53,20 @@ def stress(X,d):
             stress += pow(np.linalg.norm(X[i]-X[j])-d[i][j],2)
     return pow(stress,0.5)
 
-with open('push_data/lg_random_table_graphs.pkl', 'rb') as myfile:
+with open('data/lg_table_full.pkl', 'rb') as myfile:
     data = pickle.load(myfile)
 
 with open('push_data/sgd_table_graphs.pkl','rb') as myfile:
     sgd_data = pickle.load(myfile)
 
-with open('push_data/tsnet_table_graphs.pkl','rb') as myfile:
+with open('data/tsnet_table_full.pkl','rb') as myfile:
     tsnet_data = pickle.load(myfile)
 
 print(data.keys())
 
 
 
-metric = 'stress'
+metric = 'NP'
 
 
 
@@ -93,7 +93,7 @@ row_labels = [row_labels[i] for i in sort_graphs]
 
 max_graph = {graph:0 for graph in row_labels}
 
-column_labels = ["LG,k=18","LG,k= |V|", 'SGD', 'tsNET','filler']
+column_labels = ["tsnet", 'LG,k=22', 'LG,k=100', 'LG,k=|V|','sgd']
 
 table_string = ""
 ismin = lambda score,m: "{}".format(round(score,4)) if not m else "{}\\bf {} {}".format('{',round(score,4),'}')
@@ -113,7 +113,8 @@ for row in row_labels:
             tsnet = tsnet_data[row][metric]
         else:
             tsnet = 0
-        this_row = np.array([tsnet,lg_low,lg_mid,lg_high,sgd])
+        r = lambda x: round(x,4)
+        this_row = np.array([r(tsnet),r(lg_low),r(lg_mid),r(lg_high),r(sgd)])
         cell_data.append(this_row)
         min_row = np.argmin(this_row)
         split = row.split("_")
@@ -168,31 +169,29 @@ from pandas import *
 import matplotlib.cm as cm
 fig, ax = plt.subplots()
 
-rows = ['%d nodes' % x for x in (10, 30, 50, 75, 100)]
-columns=['TP', 'TN', 'FP', 'FN']
+rows = row_labels
+columns = ["tsnet", 'LG,k=22', 'LG,k=100', 'LG,k=|V|','sgd']
 
-conf_data = np.array(
-[[ 230,  847,  784,  208],
- [ 156, 1240,  391,  282],
- [ 146, 1212,  419,  292],
- [ 130, 1148,  483,  308],
- [ 122, 1173,  458,  316]]
-)
+conf_data = np.array(cell_data)
 
-colores = np.zeros((conf_data.shape[0], conf_data.shape[1], 4))
+colores = np.zeros((conf_data.shape[0],conf_data.shape[1],4))
 for i in range(conf_data.shape[0]):
-    col_data = conf_data[:, i]
+    col_data = conf_data[i]
     normal = plt.Normalize(np.min(col_data), np.max(col_data))
-    colores[i,:] = cm.Reds(normal(col_data))
+    colores[i,:] = cm.RdYlGn_r(normal(col_data))
 
 #fig.patch.set_visible(False)
 ax.axis('off')
 ax.axis('tight')
-ax.table(cellText=conf_data,
+mytable = ax.table(cellText=conf_data,
          rowLabels=rows,
          colLabels=columns,
          cellColours=colores,
          loc='center',
          colWidths=[0.1 for x in columns])
 fig.tight_layout()
+
+mytable.set_fontsize(20)
+
+
 plt.show()
