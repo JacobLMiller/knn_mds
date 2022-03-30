@@ -17,6 +17,60 @@ norm = np.linalg.norm
 def norm_grad(x):
     return x/norm(x)
 
+@jit(nopython=True)
+def sgd_debug(X,d,w,indices,schedule,t,tol):
+    shuffle = np.random.shuffle
+    n = len(X)
+    for epoch in range(len(schedule)):
+        step = schedule[epoch] 
+
+        change = 10
+        for i,j in indices:
+            #old = np.linalg.norm(X[i]-X[j])
+            #Get difference vector
+            pq = X[i]-X[j]
+
+            #Calculate its magnitude (numpys implementation was soooooo slowwwwww on my poor laptop at least)
+            mag = (pq[0]*pq[0] + pq[1]*pq[1]) ** 0.5
+
+            #derivative of eucldiean norm
+            mag_grad = pq/mag
+
+            #get the step size
+            mu = (step*w[i][j]) / d[i][j] ** 2
+            if mu >= 1: mu = 1
+
+            #Find the distance to move both nodes as in https://github.com/jxz12/s_gd2
+            r = (mu*(mag-d[i][j]))/(2*mag)
+            stress = r*pq
+
+            #repulsion step size and calculation
+            mu1 = ((1-w[i][j])*step) * d[i][j] **2
+            if mu1 >= 1: mu1 = 1
+            repulsion = -mu1 * (mag_grad/mag)
+
+            #Normalize so the weights sum to 1
+            l_sum = 1+t
+
+            #Final gradient w.r.t X[i]
+            m = (1/l_sum)*stress + (t/l_sum)*repulsion
+
+            #Update positions
+            X[i] -= m
+            X[j] += m
+
+            #Track how much we changed
+            newpq = X[i]-X[j]
+            newmag = (newpq[0]*newpq[0] + newpq[1]*newpq[1]) ** 0.5
+            change = max(change,abs(mag-newmag))
+
+
+        if change < tol: break
+        yield X.copy()
+        shuffle(indices)
+        #print("Epoch: " + str(epoch))
+    return X
+
 @jit(nopython=True,cache=True)
 def sgd(X,d,w,indices,schedule,t,tol):
     shuffle = np.random.shuffle
@@ -45,7 +99,7 @@ def sgd(X,d,w,indices,schedule,t,tol):
             stress = r*pq
 
             #repulsion step size and calculation
-            mu1 = (step) * d[i][j] **2
+            mu1 = ((1-w[i][j])*step) * d[i][j] **2
             if mu1 >= 1: mu1 = 1
             repulsion = -mu1 * (mag_grad/mag)
 
@@ -133,7 +187,9 @@ class SGD:
         import itertools
 
         indices = np.array(list(itertools.combinations(range(self.n), 2)))
-        schedule = schedule_convergent(self.d,30,0.1,num_iter)
+        schedule = schedule_convergent(self.d,30,0.1,200)
+        if debug:
+            return [X for X in sgd_debug(self.X,self.d,self.w,indices,schedule,t,tol)]
 
         self.X = sgd(self.X,self.d,self.w,indices,schedule,t,tol)
         return self.X

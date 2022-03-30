@@ -194,4 +194,4 @@ fig.tight_layout()
 #mytable.set_fontsize(20)
 
 
-plt.savefig('NP_table.pdf')
+plt.savefig('NP_table.png')

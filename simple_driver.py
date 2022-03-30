@@ -264,7 +264,7 @@ def drive(graph,hist=False,output=None,k=10):
     d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
     d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
 
-    a = 5
+    a = 22
 
     w = get_w(G,k=k,a=a)
 
@@ -281,8 +281,8 @@ def drive(graph,hist=False,output=None,k=10):
         draw(G,X,output=output)
 
 if __name__ == '__main__':
-    for k in [10,22,48,74,100]:
-        drive('table_graphs/connected_watts_500',k=k,output='connected_watts_500_k{}.png'.format(k))
+    for k in [10,22,48,74,100,400]:
+        drive('table_graphs/dwt_419',k=k,output='fpga_k{}.png'.format(k))
 
     # drive('graphs/mesh3e1',hist=False,k=8)
     drive('random_runs/connected_watts_300',hist=False,k=22)
