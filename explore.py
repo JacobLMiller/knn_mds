@@ -14,7 +14,7 @@ norm = lambda x: np.linalg.norm(x,ord=2)
 
 
 def main():
-    with open('push_data/tsnet_table_graphs.pkl', 'rb') as myfile:
+    with open('data/lg_table_full.pkl', 'rb') as myfile:
         data_small = pickle.load(myfile)
     with open('data/tsnet_table_graphs_large.pkl', 'rb') as myfile:
         data_large = pickle.load(myfile)
@@ -25,11 +25,9 @@ def main():
     with open('push_data/tsnet_random_graphs1.pkl', 'rb') as myfile:
         tsnet = pickle.load(myfile)
 
-    data = {key: data_small[key] if data_small[key]['NP'] != 0 else data_large[key] for key in data_small.keys()}
+    #data = {key: data_small[key] if data_small[key]['NP'] != 0 else data_large[key] for key in data_small.keys()}
 
-    with open('data/tsnet_table_full.pkl','wb') as myfile:
-        pickle.dump(data,myfile)
-    myfile.close()
+    print(data_small['connected_watts_300'])
 
 if __name__ == "__main__":
     main()

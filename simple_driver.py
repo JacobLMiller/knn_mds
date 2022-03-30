@@ -281,8 +281,8 @@ def drive(graph,hist=False,output=None,k=10):
         draw(G,X,output=output)
 
 if __name__ == '__main__':
-    # for k in [10,22,48,74,100]:
-    #     drive('graphs/visbrazil',k=k,output='visbrazil_k{}.png'.format(k))
+    for k in [10,22,48,74,100]:
+        drive('table_graphs/connected_watts_500',k=k,output='connected_watts_500_k{}.png'.format(k))
 
     # drive('graphs/mesh3e1',hist=False,k=8)
     drive('random_runs/connected_watts_300',hist=False,k=22)

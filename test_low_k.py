@@ -157,7 +157,7 @@ def experiment(n=5):
         G = gt.load_graph(path+graph + '.dot')
         d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
         d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
-        if G.num_vertices() > 1010: continue
+        if G.num_vertices() <= 1010: continue
 
         CC = G.num_edges() // G.num_vertices()
         a = 4 if CC < 4 else 5 if CC < 8 else 6
@@ -193,7 +193,7 @@ def experiment(n=5):
         print()
         print()
 
-    with open('data/lg_table_plots.pkl','wb') as myfile:
+    with open('data/lg_table_plots_large.pkl','wb') as myfile:
         pickle.dump(graph_dict,myfile)
     myfile.close()
 

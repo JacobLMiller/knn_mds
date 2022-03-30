@@ -85,7 +85,7 @@ row_labels = list(data.keys())
 print(data[row_labels[2]].keys())
 
 row_labels.sort()
-row_labels = ['can_96', 'football', 'jazz', 'visbrazil', 'mesh3e1', 'powerlaw300','block_model_300']
+#row_labels = ['can_96', 'football', 'jazz', 'visbrazil', 'mesh3e1', 'powerlaw300','block_model_300']
 
 graphs = np.array([gt.load_graph("table_graphs/{}.dot".format(row)).num_vertices() for row in row_labels])
 sort_graphs = np.argsort(graphs)
@@ -191,7 +191,7 @@ mytable = ax.table(cellText=conf_data,
          colWidths=[0.1 for x in columns])
 fig.tight_layout()
 
-mytable.set_fontsize(20)
+#mytable.set_fontsize(20)
 
 
-plt.show()
+plt.savefig('NP_table.pdf')
