@@ -83,11 +83,12 @@ def alpha_exp(n,G,d,d_norm,a,graph):
     for i in range(n):
         for a in range(len(alphas)):
             Y = SGD(d,weighted=True,w=w)
-            X = Y.solve(60,alphas[a])
+            X = Y.solve(60,t=alphas[a])
             X = layout_io.normalize_layout(X)
 
             alpha['NP'][a] += get_neighborhood(X,d)
             alpha['stress'][a] += get_stress(X,d_norm)
+            print(alpha['stress'][a])
 
 
     alpha['NP'] /= n
@@ -174,15 +175,15 @@ def experiment(n=5):
         print("-----------------------------------------------------------")
 
         print("Iteration experiment")
-        graph_dict['iterations'] = iteration_exp(n,G,d,d_norm,a,graph)
+        #graph_dict['iterations'] = iteration_exp(n,G,d,d_norm,a,graph)
         print("Matrix power experiment")
-        graph_dict['matrix_power'] = matrix_exp(n,G,d,d_norm,graph)
+        #graph_dict['matrix_power'] = matrix_exp(n,G,d,d_norm,graph)
         print("Alpha experiment")
         graph_dict['alpha'] = alpha_exp(n,G,d,d_norm,a,graph)
         print("Epsilon experiment")
-        graph_dict['epsilon'] = epsilon_exp(n,G,d,d_norm,a,graph)
+        #graph_dict['epsilon'] = epsilon_exp(n,G,d,d_norm,a,graph)
 
-    with open('data/paramater_experiments1.pkl','wb') as myfile:
+    with open('data/paramater_experiments2.pkl','wb') as myfile:
         pickle.dump(graph_dict,myfile)
     myfile.close()
 

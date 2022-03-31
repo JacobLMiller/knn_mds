@@ -18,7 +18,7 @@ norm = np.linalg.norm
 def norm_grad(x):
     return x/norm(x)
 
-@jit(nopython=True,cache=True)
+@jit(nopython=True)
 def sgd_debug(X,d,w,indices,schedule,t,tol):
     shuffle = np.random.shuffle
     n = len(X)
@@ -47,9 +47,9 @@ def sgd_debug(X,d,w,indices,schedule,t,tol):
             stress = r*pq
 
             #repulsion step size and calculation
-            mu1 = ((1-w[i][j])*step) #* d[i][j] **2
-            if mu1 >= 0.05: mu1 = 0.05
-            repulsion = -mu1 * (mag_grad/(mag*mag))
+            mu1 = step #* d[i][j] **2
+            if mu1 >= 0.5: mu1 = 0.5
+            repulsion = -mu1 * (mag_grad/(mag))
 
             #Normalize so the weights sum to 1
             l_sum = 1+t
@@ -130,6 +130,7 @@ def sgd(X,d,w,indices,schedule,t,tol):
 def schedule_convergent(d,t_max,eps,t_maxmax):
     w = np.divide(np.ones(d.shape),d**2,out=np.zeros_like(d), where=d!=0)
     w_min,w_max = np.amin(w,initial=10000,where=w > 0), np.max(w)
+    print(w_min)
 
     eta_max = 1.0 / w_min
     eta_min = eps / w_max
@@ -139,6 +140,7 @@ def schedule_convergent(d,t_max,eps,t_maxmax):
     # initialize step sizes
     etas = np.zeros(t_maxmax)
     eta_switch = 1.0 / w_max
+    print(eta_switch)
     for t in range(t_maxmax):
         eta = eta_max * np.exp(-lamb * t)
         if (eta < eta_switch): break
@@ -146,9 +148,14 @@ def schedule_convergent(d,t_max,eps,t_maxmax):
         etas[t] = eta
 
     tau = t
+    print(lamb)
     for t in range(t,t_maxmax):
-        eta = eta_switch / (1 + 10*lamb*(t-tau))
+        eta = eta_switch / (1 + lamb*(t-tau))
         etas[t] = eta
+        #etas[t] = 1e-7
+
+    #etas = [eps for t in range(t_maxmax)]
+    #print(etas)
     return np.array(etas)
 
 class SGD:
@@ -185,11 +192,11 @@ class SGD:
         #sched = lambda count: 1/np.sqrt(count+1)
         return np.array([sched(count) for count in range(100)])
 
-    def solve(self,num_iter,debug=False,t=0.6,tol=1e-3):
+    def solve(self,num_iter,debug=False,t=0.6,tol=1e-3,eps=0.1):
         import itertools
 
         indices = np.array(list(itertools.combinations(range(self.n), 2)))
-        schedule = schedule_convergent(self.d,30,0.1,200)
+        schedule = schedule_convergent(self.d,30,eps,num_iter)
         if debug:
             return [X for X in sgd_debug(self.X,self.d,self.w,indices,schedule,t,tol)]
 
@@ -243,7 +250,7 @@ class SGD:
         cost = 0
 
         #t = 0.6
-        schedule = schedule_convergent(d,30,0.01,200)
+        schedule = schedule_convergent(d,30,0.1,200)
         for epoch in range(len(schedule)):
             step = schedule[epoch]
             #step = step if step < 0.5 else 0.5

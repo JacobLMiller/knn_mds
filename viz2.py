@@ -90,6 +90,7 @@ row_labels.sort()
 graphs = np.array([gt.load_graph("table_graphs/{}.dot".format(row)).num_vertices() for row in row_labels])
 sort_graphs = np.argsort(graphs)
 row_labels = [row_labels[i] for i in sort_graphs]
+row_labels = ['can_96', 'football', 'jazz', 'visbrazil', 'mesh3e1', 'powerlaw300', 'block_model_300', 'connected_watts_300', 'netscience', 'dwt_419', 'oscil', '494_bus', 'block_model_500', 'powerlaw500', 'connected_watts_500', 'qh882', 'connected_watts_1000', 'block_model_1000', 'powerlaw1000', 'dwt_1005', 'btree9', 'CSphd', 'fpga', 'block_2000', 'sierpinski3d', 'EVA']
 
 max_graph = {graph:0 for graph in row_labels}
 
@@ -215,6 +216,6 @@ def plot_time():
 
     plt.savefig('time_table.png')
 
-plot_metric_table('NP')
-plot_metric_table('stress')
-plot_time()
+# plot_metric_table('NP')
+# plot_metric_table('stress')
+# plot_time()

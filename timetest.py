@@ -22,11 +22,19 @@ def time_exp(n=5):
     graph_paths = os.listdir(path)
 
     graph_paths = list( map(lambda s: s.split('.')[0], graph_paths) )
-    print(graph_paths)
-    graph_costs = {}
-    avg_time = [[] for _ in range(n)]
-    for graph in graph_paths:
-        G = gt.load_graph(path+graph + '.dot')
+    #graph_paths = ['connected_watts_300']
+
+    graphs = [gt.load_graph('new_tests/{}.dot'.format(graph)) for graph in graph_paths]
+    details = [ (g.num_vertices(), g.num_edges(), name) for name,g in zip(graph_paths,graphs)]
+    details.sort()
+
+    data = {}
+
+
+    for _,__,graph in details:
+        G = gt.load_graph('new_tests/{}.dot'.format(graph))
+        avg_time = []
+
         for i in range(n):
 
             start = time.perf_counter()
@@ -37,8 +45,12 @@ def time_exp(n=5):
             X = Y.solve(60,t=0.1)
             end = time.perf_counter()
             print('took: {}'.format(end-start))
-            avg_time[i].append(end-start)
-    return avg_time
+            avg_time.append(end-start)
+
+        data[graph] = sum(avg_time)/len(avg_time)
+        print(data[graph])
+
+    return data
 
 
 def draw(G,X,output=None):
@@ -57,27 +69,31 @@ def cost_curve(n=5):
     graph_paths = os.listdir(path)
 
     graph_paths = list( map(lambda s: s.split('.')[0], graph_paths) )
+    graph_paths = ['powerlaw300','block_model300']
     print(graph_paths)
     graph_costs = {}
     for graph in graph_paths:
         G = gt.load_graph(path+graph + '.dot')
         d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
-        cost_array = np.zeros(201)
+        cost_array = np.zeros(61)
         print(graph)
         for i in range(n):
-            w = get_w(G,k=24,a=5)
+            w = get_w(G,k=200,a=5)
             Y = SGD(d,weighted=True, w = w)
-            X = Y.solve(60,t=0.1,debug=True)
-            if i == 0:
-                for j in range(len(X)):
-                    if j % 1 == 0:
-                        draw(G,X[j],output='drawings/update/test_{}.png'.format(j))
-
+            X = Y.solve(60,t=0.1,debug=True,eps=0.01)
+            # if i == 0:
+            #     for j in range(len(X)):
+            #         if j % 10 == 0:
+            #             draw(G,X[j],output='drawings/update/test_{}.png'.format(j))
+            #
             cost_array += np.array( [get_cost(x,d,w,0.1) for x in X] )
 
         cost_array /= n
 
-        plt.plot(np.arange(201),cost_array)
+        plt.plot(np.arange(61),cost_array)
+        plt.suptitle(graph)
+        plt.xlabel("Iteration")
+        plt.ylabel("Cost")
         plt.savefig(graph + "cost.png")
         plt.close()
         graph_costs[graph] = cost_array
@@ -85,9 +101,9 @@ def cost_curve(n=5):
     return graph_costs
 
 
-timing = time_exp(n=10)
+#timing = time_exp(n=5)
+curves = cost_curve(5)
 curves = 0
-
 
 data = {'timing': timing, 'curves': curves}
 
