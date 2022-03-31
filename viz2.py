@@ -161,37 +161,60 @@ fig.set_size_inches(18.5, 10.5)
 
 plt.clf()
 
-from matplotlib import pyplot as plt
-import numpy as np
-randn = np.random.randn
-from pandas import *
+
 
 import matplotlib.cm as cm
-fig, ax = plt.subplots()
 
-rows = row_labels
-columns = ["tsnet", 'LG,k=22', 'LG,k=100', 'LG,k=|V|','sgd']
+#
+def plot_metric_table(metric):
+    fig, ax = plt.subplots()
+    rows = row_labels
+    columns = ["tsnet", 'LG,k=22', 'LG,k=100', 'LG,k=|V|','sgd']
 
-conf_data = np.array(cell_data)
+    conf_data = np.array(cell_data)
 
-colores = np.zeros((conf_data.shape[0],conf_data.shape[1],4))
-for i in range(conf_data.shape[0]):
-    col_data = conf_data[i]
-    normal = plt.Normalize(np.min(col_data), np.max(col_data))
-    colores[i,:] = cm.RdYlGn_r(normal(col_data))
+    colores = np.zeros((conf_data.shape[0],conf_data.shape[1],4))
+    for i in range(conf_data.shape[0]):
+        col_data = conf_data[i]
+        normal = plt.Normalize(np.min(col_data), np.max(col_data))
+        colores[i,:] = cm.RdYlGn_r(normal(col_data))
 
-#fig.patch.set_visible(False)
-ax.axis('off')
-ax.axis('tight')
-mytable = ax.table(cellText=conf_data,
-         rowLabels=rows,
-         colLabels=columns,
-         cellColours=colores,
-         loc='center',
-         colWidths=[0.1 for x in columns])
-fig.tight_layout()
+    #fig.patch.set_visible(False)
+    ax.axis('off')
+    ax.axis('tight')
+    mytable = ax.table(cellText=conf_data,
+             rowLabels=rows,
+             colLabels=columns,
+             cellColours=colores,
+             loc='center',
+             colWidths=[0.1 for x in columns])
+    fig.tight_layout()
 
-#mytable.set_fontsize(20)
+    #mytable.set_fontsize(20)
 
 
-plt.savefig('NP_table.png')
+    plt.savefig('{}_table.png'.format(metric))
+
+def plot_time():
+    fig, ax = plt.subplots()
+    cell_data = np.zeros((len(row_labels),1))
+
+    for i,graph in zip(range(len(row_labels)),row_labels):
+        print(data[graph]['time'])
+        cell_data[i] = round(data[graph]['time'].mean(),3)
+
+
+    ax.axis('off')
+    ax.axis('tight')
+    mytable = ax.table(cellText=cell_data,
+                        rowLabels=row_labels,
+                        colLabels=['Time (s)'],
+                        loc='center',
+                        colWidths=[0.1])
+    fig.tight_layout()
+
+    plt.savefig('time_table.png')
+
+plot_metric_table('NP')
+plot_metric_table('stress')
+plot_time()

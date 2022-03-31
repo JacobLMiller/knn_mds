@@ -75,6 +75,7 @@ def draw(G,X,output=None):
         gt.graph_draw(u,pos=pos,output=output)
     else:
         gt.graph_draw(G,pos=pos)
+        gt.graph_draw(G,pos=pos,output='eva.pdf')
 
 def stress_curve():
     graph = 'dwt_419'
@@ -264,13 +265,13 @@ def drive(graph,hist=False,output=None,k=10):
     d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
     d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
 
-    a = 22
+    a = 5
 
     w = get_w(G,k=k,a=a)
 
 
     Y = SGD(d,weighted=True, w = w)
-    X = Y.solve(60,debug=hist,t=0.6)
+    X = Y.solve(60,debug=hist,t=0.1)
     X = layout_io.normalize_layout(X)
     print('NP: {}'.format(get_neighborhood(X,d,2)))
     print('stress: {}'.format(get_stress(X,d)))
@@ -281,11 +282,11 @@ def drive(graph,hist=False,output=None,k=10):
         draw(G,X,output=output)
 
 if __name__ == '__main__':
-    for k in [10,22,48,74,100,400]:
-        drive('table_graphs/dwt_419',k=k,output='fpga_k{}.png'.format(k))
+    # for k in [10,22,48,74,100,400]:
+    #     drive('table_graphs/dwt_419',k=k,output='fpga_k{}.png'.format(k))
 
     # drive('graphs/mesh3e1',hist=False,k=8)
-    drive('random_runs/connected_watts_300',hist=False,k=22)
+    drive('graphs/dwt_419',hist=False,k=44)
     #iterate('random_runs/connected_watts_300')
     #drive('graphs/dwt_419',hist=False)
     # import cProfile

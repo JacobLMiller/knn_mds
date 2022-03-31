@@ -7,6 +7,7 @@ import itertools
 
 from numba import jit
 
+from metrics import get_cost
 
 import math
 import random
@@ -17,12 +18,13 @@ norm = np.linalg.norm
 def norm_grad(x):
     return x/norm(x)
 
-@jit(nopython=True)
+@jit(nopython=True,cache=True)
 def sgd_debug(X,d,w,indices,schedule,t,tol):
     shuffle = np.random.shuffle
     n = len(X)
+    yield X.copy()
     for epoch in range(len(schedule)):
-        step = schedule[epoch] 
+        step = schedule[epoch]
 
         change = 10
         for i,j in indices:
@@ -45,9 +47,9 @@ def sgd_debug(X,d,w,indices,schedule,t,tol):
             stress = r*pq
 
             #repulsion step size and calculation
-            mu1 = ((1-w[i][j])*step) * d[i][j] **2
-            if mu1 >= 1: mu1 = 1
-            repulsion = -mu1 * (mag_grad/mag)
+            mu1 = ((1-w[i][j])*step) #* d[i][j] **2
+            if mu1 >= 0.05: mu1 = 0.05
+            repulsion = -mu1 * (mag_grad/(mag*mag))
 
             #Normalize so the weights sum to 1
             l_sum = 1+t
@@ -66,6 +68,7 @@ def sgd_debug(X,d,w,indices,schedule,t,tol):
 
 
         if change < tol: break
+        #print(get_cost(X,d,w,t))
         yield X.copy()
         shuffle(indices)
         #print("Epoch: " + str(epoch))
@@ -99,9 +102,9 @@ def sgd(X,d,w,indices,schedule,t,tol):
             stress = r*pq
 
             #repulsion step size and calculation
-            mu1 = ((1-w[i][j])*step) * d[i][j] **2
+            mu1 = (step)
             if mu1 >= 1: mu1 = 1
-            repulsion = -mu1 * (mag_grad/mag)
+            repulsion = -mu1 * (mag_grad/(mag))
 
             #Normalize so the weights sum to 1
             l_sum = 1+t
@@ -144,9 +147,8 @@ def schedule_convergent(d,t_max,eps,t_maxmax):
 
     tau = t
     for t in range(t,t_maxmax):
-        eta = eta_switch / (1 + lamb*(t-tau))
+        eta = eta_switch / (1 + 10*lamb*(t-tau))
         etas[t] = eta
-
     return np.array(etas)
 
 class SGD:

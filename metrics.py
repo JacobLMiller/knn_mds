@@ -35,6 +35,7 @@ def get_stress(X,d):
     #print("a is ",min_a.x)
     return stress(a=min_a.x)
 
+
 def get_cost(X,d,w,t):                 # Define a function
     stress, l_sum,eps = 0, 1+t, 1e-13
     N = len(X)

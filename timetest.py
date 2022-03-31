@@ -17,15 +17,17 @@ from simple_driver import get_w
 
 
 def time_exp(n=5):
-    N = [x for x in range(50,2000,50)]
-    avg_time = [[] for x in range(len(N))]
-    print(len(N))
-    random = np.random.random
+    import os
+    path = 'new_tests/'
+    graph_paths = os.listdir(path)
 
-    for i in range(len(N)):
-        points = random((N[i], 2)) * 4
-        G, pos = gt.geometric_graph(points, 0.3)
-        for _ in range(n):
+    graph_paths = list( map(lambda s: s.split('.')[0], graph_paths) )
+    print(graph_paths)
+    graph_costs = {}
+    avg_time = [[] for _ in range(n)]
+    for graph in graph_paths:
+        G = gt.load_graph(path+graph + '.dot')
+        for i in range(n):
 
             start = time.perf_counter()
             d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
@@ -34,7 +36,7 @@ def time_exp(n=5):
             Y = SGD(d,weighted=True, w = w)
             X = Y.solve(60,t=0.1)
             end = time.perf_counter()
-
+            print('took: {}'.format(end-start))
             avg_time[i].append(end-start)
     return avg_time
 
@@ -56,28 +58,40 @@ def cost_curve(n=5):
 
     graph_paths = list( map(lambda s: s.split('.')[0], graph_paths) )
     print(graph_paths)
-    graph_paths = ['block_model_300']
+    graph_costs = {}
     for graph in graph_paths:
         G = gt.load_graph(path+graph + '.dot')
         d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
-        cost_array = np.zeros(200)
+        cost_array = np.zeros(201)
         print(graph)
         for i in range(n):
-            w = get_w(G,k=10,a=5)
+            w = get_w(G,k=24,a=5)
             Y = SGD(d,weighted=True, w = w)
             X = Y.solve(60,t=0.1,debug=True)
             if i == 0:
                 for j in range(len(X)):
-                    if j % 10 == 0:
+                    if j % 1 == 0:
                         draw(G,X[j],output='drawings/update/test_{}.png'.format(j))
 
             cost_array += np.array( [get_cost(x,d,w,0.1) for x in X] )
 
         cost_array /= n
 
-        plt.plot(np.arange(200),cost_array)
-        plt.show()
+        plt.plot(np.arange(201),cost_array)
+        plt.savefig(graph + "cost.png")
+        plt.close()
+        graph_costs[graph] = cost_array
+
+    return graph_costs
 
 
-x = cost_curve(5)
-print(x)
+timing = time_exp(n=10)
+curves = 0
+
+
+data = {'timing': timing, 'curves': curves}
+
+import pickle
+with open('data/extra_exps.pkl','wb') as myfile:
+    pickle.dump(data,myfile)
+myfile.close()
