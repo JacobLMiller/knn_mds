@@ -120,13 +120,13 @@ def custom_cluster(n=100,k=5,p_in=0.99,p_out=0.01):
 # #     clust = gt.local_clustering(G)
 # #     print("Graph: {}, CC: {}".format(graph, gt.vertex_average(G,clust)) )
 #
-# for i in [100,200,300,400,500,700,1000,1500]:
-#     G,bm = block_model(n=i)
-#     CC = gt.local_clustering(G)
-#     G.vertex_properties['block'] = bm
-#
-#     G.save('random_runs/block_model_{}.dot'.format(i))
-#
+for i in range(100,1501,100):
+    G,bm = block_model(n=i)
+    CC = gt.local_clustering(G)
+    G.vertex_properties['block'] = bm
+
+    G.save('random_runs/block_model_{}.dot'.format(i))
+
 
 
 # for n in [200]:

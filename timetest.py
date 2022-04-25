@@ -101,7 +101,7 @@ def cost_curve(n=5):
     return graph_costs
 
 
-#timing = time_exp(n=5)
+timing = time_exp(n=5)
 curves = cost_curve(5)
 curves = 0
 

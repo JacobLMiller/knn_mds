@@ -66,7 +66,7 @@ print(data.keys())
 
 
 
-metric = 'NP'
+metric = 'stress'
 
 
 
@@ -87,7 +87,7 @@ print(data[row_labels[2]].keys())
 row_labels.sort()
 #row_labels = ['can_96', 'football', 'jazz', 'visbrazil', 'mesh3e1', 'powerlaw300','block_model_300']
 
-graphs = np.array([gt.load_graph("table_graphs/{}.dot".format(row)).num_vertices() for row in row_labels])
+graphs = np.array([gt.load_graph("graphs/{}.dot".format(row)).num_vertices() for row in row_labels])
 sort_graphs = np.argsort(graphs)
 row_labels = [row_labels[i] for i in sort_graphs]
 row_labels = ['can_96', 'football', 'jazz', 'visbrazil', 'mesh3e1', 'powerlaw300', 'block_model_300', 'connected_watts_300', 'netscience', 'dwt_419', 'oscil', '494_bus', 'block_model_500', 'powerlaw500', 'connected_watts_500', 'qh882', 'connected_watts_1000', 'block_model_1000', 'powerlaw1000', 'dwt_1005', 'btree9', 'CSphd', 'fpga', 'block_2000', 'sierpinski3d', 'EVA']
@@ -126,6 +126,15 @@ for row in row_labels:
         table_string += row_string + '\\hline \n'
     else:
         cell_data.append([0,0,0,0])
+
+import csv
+metric = "NP"
+with open('data/formatted_data_{}.csv'.format(metric), 'w', newline='') as csvfile:
+    spamwriter = csv.writer(csvfile, delimiter=',',
+                            quotechar='|', quoting=csv.QUOTE_MINIMAL)
+    spamwriter.writerow(['graph','MDS by SGD', 'tsNET'])
+    for row in row_labels:
+        spamwriter.writerow([str(row), str(sgd_data[row][metric]), str(tsnet_data[row][metric]) ] )
 
 print(table_string)
 print("low performed better on ", count_tsnet)
@@ -166,11 +175,20 @@ plt.clf()
 
 import matplotlib.cm as cm
 
+def check_graph(name):
+    if 'connected' in name:
+        num = name.split('_')[-1]
+        return 'watts_' + num
+    if 'block' in name:
+        num = name.split('_')[-1]
+        return 'block_' + num
+    return name
 #
 def plot_metric_table(metric):
     fig, ax = plt.subplots()
-    rows = row_labels
-    columns = ["tsnet", 'LG,k=22', 'LG,k=100', 'LG,k=|V|','sgd']
+    rows = [check_graph(row) for row in row_labels]
+
+    columns = ["tsnet", 'L2G,k=22', 'L2G,k=100', 'L2G,k=|V|','sgd']
 
     conf_data = np.array(cell_data)
 
@@ -178,7 +196,7 @@ def plot_metric_table(metric):
     for i in range(conf_data.shape[0]):
         col_data = conf_data[i]
         normal = plt.Normalize(np.min(col_data), np.max(col_data))
-        colores[i,:] = cm.RdYlGn_r(normal(col_data))
+        colores[i,:] = cm.RdYlBu_r(normal(col_data))
 
     #fig.patch.set_visible(False)
     ax.axis('off')
@@ -192,9 +210,12 @@ def plot_metric_table(metric):
     fig.tight_layout()
 
     #mytable.set_fontsize(20)
+    mytable.auto_set_font_size(False)
+    mytable.set_fontsize(24)
+    mytable.scale(2, 2)
 
 
-    plt.savefig('{}_table.png'.format(metric))
+    plt.savefig('{}_table.pdf'.format(metric))
 
 def plot_time():
     fig, ax = plt.subplots()
@@ -214,8 +235,24 @@ def plot_time():
                         colWidths=[0.1])
     fig.tight_layout()
 
-    plt.savefig('time_table.png')
+    plt.savefig('time_table.pdf')
+    plt.show()
 
-# plot_metric_table('NP')
-# plot_metric_table('stress')
-# plot_time()
+plot_metric_table('NP')
+plot_metric_table('stress')
+plot_time()
+
+# with open('push_data/extra_exps.pkl', 'rb') as myfile:
+#     data = pickle.load(myfile)
+#
+# time = data['timing']
+# print(time)
+# timing = [time[t] for t in time]
+# print(timing)
+#
+# plt.plot([100,200,300,400,500,700,1000,1500],timing,'o-',label='time (s)')
+# plt.legend()
+# plt.xlabel('|V|')
+# plt.ylabel('time (s)')
+# plt.suptitle('Average speed as a function of graph size')
+# plt.savefig('speed.png')

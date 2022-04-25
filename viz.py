@@ -7,7 +7,7 @@ n = 5
 
 #1f77b4', '#aec7e8', '#ff7f0e'
 
-with open('data/lg_table_plots_full.pkl', 'rb') as myfile:
+with open('data/paramater_experiments.pkl', 'rb') as myfile:
     data = pickle.load(myfile)
 
 with open('data/lg_table_full.pkl', 'rb') as myfile:
@@ -86,28 +86,32 @@ stress_col = '#1f77b4'
 #     plt.savefig('figures/new_kcurve/{}_3.png'.format(graph))
 #     plt.close()
 
-NP = data[graph]['NP']
+for graph in data.keys():
+    print(data[graph].keys())
+    NP = data[graph]['matrix_power']['NP']
 
-stress = data[graph]['stress']# + [full[graph]['stress'][-1]] )
+    stress = data[graph]['matrix_power']['stress']# + [full[graph]['stress'][-1]] )
 
-print(NP)
-all_data = np.concatenate((NP,stress))
-bottom = np.min(all_data) - 0.01
-top = np.max(all_data) + 0.01
-K = np.linspace(22,100,8)
+    print(NP)
+    all_data = np.concatenate((NP,stress))
+    bottom = np.min(all_data) - 0.01
+    top = np.max(all_data) + 0.01
+    K = np.linspace(22,100,8)
 
-plt.suptitle(graph)
-ax1 = plt.subplot()
-l1, = ax1.plot(K,NP, 'o-',color=NP_col)
-ax1.set_ylabel('NE')
-ax1.set_xlabel('k')
-ax1.set_ylim(bottom,top)
+    plt.suptitle(graph)
+    ax1 = plt.subplot()
+    l1, = ax1.plot(K,NP, 'o-',color=NP_col)
+    ax1.set_ylabel('NE')
+    ax1.set_xlabel('k')
+    ax1.set_ylim(bottom,top)
 
-ax2 = ax1.twinx()
-l2, = ax2.plot(K,stress, 'o-',color=stress_col)
-ax2.set_ylabel('stress')
-ax2.set_ylim(bottom,top)
+    ax2 = ax1.twinx()
+    l2, = ax2.plot(K,stress, 'o-',color=stress_col)
+    ax2.set_ylabel('stress')
+    ax2.set_ylim(bottom,top)
 
-plt.legend([l1, l2], ["NE,stress"])
+    plt.legend([l1, l2], ["NE","stress"])
 
-plt.show()
+    plt.savefig('figures/dual_k_curve/{}_dual.eps'.format(graph))
+    plt.clf()
+    plt.close()
