@@ -1,5 +1,4 @@
 from SGD_MDS2 import SGD
-from SGD_MDS import SGD_MDS
 
 import modules.distance_matrix as distance_matrix
 import modules.layout_io as layout_io
@@ -10,8 +9,6 @@ import graph_tool.all as gt
 
 from metrics import get_neighborhood, get_norm_stress, get_stress,get_cost
 from sklearn.metrics import pairwise_distances
-
-from SGD_MDS_debug import SGD_d
 
 
 def get_w(G,k=5,a=5,eps=0):

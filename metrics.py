@@ -12,13 +12,6 @@ def get_norm_stress(X,d):
             stress += pow(d[i][j] - norm(X[i]-X[j]),2)
     return stress / np.sum(np.square(d))
 
-def tsnet_stress(X,d):
-    N = len(X)
-    ss = (X * X).sum(axis=1)
-    diff = np.sqrt( ss.reshape((N, 1)) + ss.reshape((1, N)) - 2 * np.dot(X,X.T) )
-    np.fill_diagonal(diff,0)
-    return np.sum( np.square(diff-d)  ) / np.sum(np.square(d))
-    #return np.sum( np.square( np.divide( (diff-d), d , out=np.zeros_like(d), where=d!=0) ) )
 
 def get_stress(X,d):
     from math import comb
@@ -81,38 +74,12 @@ def get_neighborhood(X,d,rg = 2):
         intersect = np.intersect1d(k_theory[i],k_embedded[i]).size
         jaccard = intersect / (2*k_theory[i].size - intersect)
 
-        NP += 1-jaccard
+        NP += jaccard
 
     return NP / len(X)
 
 
 
-
-def ind_neighborhood(X,d,rg = 2):
-    """
-    How well do the local neighborhoods represent the theoretical neighborhoods?
-    Closer to 1 is better.
-    Measure of percision: ratio of true positives to true positives+false positives
-    """
-    norm = np.linalg.norm
-    def get_k_embedded(X,k_t):
-        dist_mat = pairwise_distances(X)
-        return [np.argpartition(dist_mat[i],len(k_t[i]))[:len(k_t[i])] for i in range(len(dist_mat))]
-
-    k_theory = [np.where((d[i] <= rg) & (d[i] > 0))[0] for i in range(len(d))]
-
-    k_embedded = get_k_embedded(X,k_theory)
-
-    sum = 0
-    for i in range(len(X)):
-        count_intersect = 0
-        for j in range(len(k_theory[i])):
-            if k_theory[i][j] in k_embedded[i]:
-                count_intersect += 1
-        sum += count_intersect/ len(k_theory[i])
-        yield 1- count_intersect/len(k_theory[i])
-
-    return
 
 
 def MAP(G,X):
