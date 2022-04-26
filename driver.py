@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import graph_tool.all as gt
 
-from metrics import get_neighborhood, get_norm_stress, get_stress,get_cost
+from metrics import get_neighborhood, get_stress,get_cost
 from sklearn.metrics import pairwise_distances
 
 
@@ -72,126 +72,6 @@ def draw(G,X,output=None):
         gt.graph_draw(u,pos=pos,output=output)#,vertex_fill_color=color)
     else:
         gt.graph_draw(G,pos=pos)
-
-def stress_curve():
-    graph = 'dwt_419'
-
-    G = gt.load_graph("graphs/{}.dot".format(graph))
-    d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
-    d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
-
-
-    X = layout(G,d,d_norm,debug=True)
-    draw(G,X[-1])
-
-    stress, NP = [get_norm_stress(x,d_norm) for x in X], [get_neighborhood(x,d) for x in X]
-    plt.plot(np.arange(len(stress)), stress, label="Stress")
-    plt.plot(np.arange(len(stress)), NP, label="NP")
-    plt.suptitle("Block graph")
-    plt.legend()
-    plt.show()
-
-def k_curve(graph,radius=False, n=5,folder='graphs/'):
-    print(graph)
-
-    G = gt.load_graph("{}{}.dot".format(folder,graph))
-    d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
-    d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
-
-    diam = np.max(d)
-    CC,_ = gt.global_clustering(G)
-    a = 3
-
-    K = np.linspace(10,100,10) if not radius else np.array([1,2,3,4,5,6,7])
-    stress,NP = np.zeros(K.shape), np.zeros(K.shape)
-    for _ in range(n):
-        for i in range(len(K)):
-
-            k = int(K[i])
-            X,w = layout(G,d,d_norm,debug=False,k=k,a=a,radius=radius)
-            draw(G,X,output='drawings/{}_k{}.png'.format(graph,k))
-
-            stress[i] += get_stress(X,d_norm)
-            NP[i] += (get_neighborhood(X,d))
-    stress = stress/n
-    NP = NP/n
-
-
-    plt.plot(K.astype(int), stress, label="Stress")
-    plt.plot(K.astype(int), NP, label="NP")
-    plt.suptitle(graph)
-    plt.xlabel("k")
-    plt.legend()
-    plt.savefig('figures/kcurve_{}.png'.format(graph))
-    plt.clf()
-    print()
-
-def a_curve(graph,radius=False, n=5):
-    print(graph)
-
-    G = gt.load_graph("graphs/{}.dot".format(graph))
-    d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
-    d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
-
-    diam = np.max(d)
-    CC,_ = gt.global_clustering(G)
-
-    A = np.array([1,2,3,4,5,6,7,8])
-    stress,NP = np.zeros(A.shape), np.zeros(A.shape)
-    for _ in range(n):
-        for i in range(len(A)):
-            a = A[i]
-            X,w = layout(G,d,d_norm,debug=True,k=22,a=a,radius=radius)
-            draw(G,X[-1],output='drawings/{}_a{}.png'.format(graph,a))
-
-            stress[i] += get_stress(X[-1],d_norm)
-            NP[i] += (get_neighborhood(X[-1],d))
-    stress = stress/n
-    NP = NP/n
-
-
-    plt.plot(A.astype(int), stress, label="Stress")
-    plt.plot(A.astype(int), NP, label="NP")
-    plt.suptitle(graph)
-    plt.xlabel("a")
-    plt.legend()
-    plt.savefig('figures/acurve_{}.png'.format(graph))
-    plt.clf()
-    print()
-
-
-def t_curve(graph,radius=False, n=5):
-    print(graph)
-
-    G = gt.load_graph("random_runs/{}.dot".format(graph))
-    d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
-    d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
-
-    diam = np.max(d)
-    CC,_ = gt.global_clustering(G)
-
-    A = np.linspace(0,1,8)
-    stress,NP = np.zeros(A.shape), np.zeros(A.shape)
-    for _ in range(n):
-        for i in range(len(A)):
-            t = A[i]
-            X,w = layout(G,d,d_norm,debug=True,k=22,a=3,t=t,radius=radius)
-            draw(G,X[-1],output='drawings/{}_t{}.png'.format(graph,t))
-
-            stress[i] += get_stress(X[-1],d_norm)
-            NP[i] += (get_neighborhood(X[-1],d))
-    stress = stress/n
-    NP = NP/n
-
-
-    plt.plot(A.astype(int), stress, label="Stress")
-    plt.plot(A.astype(int), NP, label="NP")
-    plt.suptitle(graph)
-    plt.xlabel("t")
-    plt.legend()
-    plt.savefig('figures/tcurve_{}.png'.format(graph))
-    plt.clf()
-    print()
 
 def layout_directory():
     import os

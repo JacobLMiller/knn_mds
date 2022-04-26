@@ -1,16 +1,15 @@
 import numpy as np
-from numba import jit
 
 from sklearn.metrics import pairwise_distances
 
-@jit(nopython=True)
-def get_norm_stress(X,d):
-    norm, stress, n = np.linalg.norm, 0, len(X)
-
-    for i in range(n):
-        for j in range(n):
-            stress += pow(d[i][j] - norm(X[i]-X[j]),2)
-    return stress / np.sum(np.square(d))
+# @jit(nopython=True)
+# def get_norm_stress(X,d):
+#     norm, stress, n = np.linalg.norm, 0, len(X)
+#
+#     for i in range(n):
+#         for j in range(n):
+#             stress += pow(d[i][j] - norm(X[i]-X[j]),2)
+#     return stress / np.sum(np.square(d))
 
 
 def get_stress(X,d):

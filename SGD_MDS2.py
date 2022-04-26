@@ -1,6 +1,4 @@
-import networkx as nx
 import numpy as np
-import matplotlib.pyplot as plt
 #import tensorflow as tf
 from math import sqrt
 import itertools
