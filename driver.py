@@ -67,15 +67,11 @@ def draw(G,X,output=None):
     deg = G.degree_property_map("total")
     deg.a = 4 * (np.sqrt(deg.a) * 0.5 + 0.4)
 
-    color = G.new_vp('string')
-    for v in G.iter_vertices():
-        color[v] = 'blue' if v <= 200 else 'red'
 
     if output:
         gt.graph_draw(u,pos=pos,output=output)#,vertex_fill_color=color)
     else:
         gt.graph_draw(G,pos=pos)
-        gt.graph_draw(G,pos=pos,output='eva.pdf')
 
 def stress_curve():
     graph = 'dwt_419'
@@ -260,7 +256,7 @@ def iterate(graph):
     plt.plot(K,NP)
     plt.show()
 
-def drive(graph,hist=False,output=None,k=10):
+def drive(graph,L2G=False,hist=False,output=None,k=10):
     G = gt.load_graph("{}.dot".format(graph))
 
     d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
@@ -270,7 +266,7 @@ def drive(graph,hist=False,output=None,k=10):
     w = get_w(G,k=k)
 
 
-    Y = SGD(d,weighted=True, w = w)
+    Y = SGD(d,weighted=L2G, w = w)
     X = Y.solve(60,debug=hist,t=0.1)
     X = layout_io.normalize_layout(X)
 
@@ -283,4 +279,4 @@ def drive(graph,hist=False,output=None,k=10):
         draw(G,X,output=output)
 
 if __name__ == '__main__':
-    drive('graphs/10square',hist=False,k=100)
+    drive('graphs/10square',L2G=False)

@@ -130,7 +130,6 @@ def sgd(X,d,w,indices,schedule,t,tol):
 def schedule_convergent(d,t_max,eps,t_maxmax):
     w = np.divide(np.ones(d.shape),d**2,out=np.zeros_like(d), where=d!=0)
     w_min,w_max = np.amin(w,initial=10000,where=w > 0), np.max(w)
-    print(w_min)
 
     eta_max = 1.0 / w_min
     eta_min = eps / w_max
@@ -148,7 +147,6 @@ def schedule_convergent(d,t_max,eps,t_maxmax):
         etas[t] = eta
 
     tau = t
-    print(lamb)
     for t in range(t,t_maxmax):
         eta = eta_switch / (1 + lamb*(t-tau))
         etas[t] = eta
@@ -173,11 +171,12 @@ class SGD:
 
         a = 1
         b = 1
+        self.weighted = weighted
         if weighted:
             # self.w = set_w(self.d,k)
             self.w = w
         else:
-            self.w = np.array([[ 1 if self.d[i][j] == 1 else 0 for i in range(self.n)]
+            self.w = np.array([[ 1 if self.d[i][j] > 0 else 0 for i in range(self.n)]
                         for j in range(self.n)])
 
         w_min = 1/pow(self.d_max,2)
@@ -197,6 +196,7 @@ class SGD:
 
         indices = np.array(list(itertools.combinations(range(self.n), 2)))
         schedule = schedule_convergent(self.d,30,eps,num_iter)
+        t = t if self.weighted else 0
         if debug:
             return [X for X in sgd_debug(self.X,self.d,self.w,indices,schedule,t,tol)]
 
