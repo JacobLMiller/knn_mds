@@ -100,7 +100,10 @@ if __name__ == '__main__':
     print('NP: {}'.format(get_neighborhood(Y,X,2)) )
     print('Stress: {}'.format( get_stress(Y,X_norm)) )
     print("----------------")
-    gt.graph_draw(g, pos=pos)
+    label = g.new_vertex_property('string')
+    for v in g.iter_vertices():
+        label[v] = str(v)
+    gt.graph_draw(g, pos=pos,vertex_text=label)
 
 
     # for i in range(len(hist)):

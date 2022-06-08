@@ -40,21 +40,18 @@ def convert_graph(H):
         G.add_edge(e[0],e[1])
     return G
 
-def block_model(n=500,lam=10,num_blocks=10):
-    def prob(a, b):
 
-       if a == b:
+import graph_tool.all as gt
+import numpy as np
 
-           return 0.999
+def block_model(n=500,lam=10,num_blocks=10, p1 = 0.999, p2 = 0.001):
+    prob = lambda a,b: p1 if a==b else p2
 
-       else:
-
-           return 0.001
     G, bm = gt.random_graph(n, lambda: np.random.poisson(lam=lam), directed=False,
 
                             model="blockmodel",
 
-                            block_membership=lambda: random.randint(0,num_blocks-1),
+                            block_membership=lambda: np.random.randint(0,num_blocks-1),
 
                             edge_probs=prob)
     return G,bm
@@ -120,8 +117,8 @@ def custom_cluster(n=100,k=5,p_in=0.99,p_out=0.01):
 # #     clust = gt.local_clustering(G)
 # #     print("Graph: {}, CC: {}".format(graph, gt.vertex_average(G,clust)) )
 #
-for i in range(100,1501,100):
-    G,bm = block_model(n=i)
+for i in [30,60,90]:
+    G,bm = block_model(n=i,num_blocks=3)
     CC = gt.local_clustering(G)
     G.vertex_properties['block'] = bm
 
@@ -157,26 +154,3 @@ for i in range(100,1501,100):
 # import gc
 #
 # print(gc.garbage)
-
-
-import os
-
-path = 'table_graphs/'
-graph_paths = os.listdir(path)
-
-graph_paths = list( map(lambda s: s.split('.')[0], graph_paths) )
-#graph_paths = ['custom_cluster_100']
-print(graph_paths)
-graphs = [gt.load_graph('table_graphs/{}.dot'.format(graph)) for graph in graph_paths]
-
-details = [ (g.num_vertices(), g.num_edges(), name) for name,g in zip(graph_paths,graphs)]
-details.sort()
-for x in details:
-    print(x)
-
-
-import pickle
-with open('push_data/extra_exps.pkl', 'rb') as myfile:
-    data = pickle.load(myfile)
-
-print(data['timing'][0])

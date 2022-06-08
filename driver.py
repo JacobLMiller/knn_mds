@@ -268,16 +268,17 @@ def drive(graph,hist=False,output=None,k=10):
 
     d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
     d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
+    print(d)
 
 
     w = get_w(G,k=k)
 
 
-    Y = SGD(d,weighted=True, w = w)
+    Y = SGD(d,weighted=False, w = w)
     X = Y.solve(60,debug=hist,t=0.1)
     X = layout_io.normalize_layout(X)
 
-    print('NP: {}'.format(get_neighborhood(X,d,2)))
+    print('NP: {}'.format(get_neighborhood(X,d,1)))
     print('stress: {}'.format(get_stress(X,d)))
 
     if hist:
@@ -286,4 +287,4 @@ def drive(graph,hist=False,output=None,k=10):
         draw(G,X,output=output)
 
 if __name__ == '__main__':
-    drive('graphs/10square',hist=False,k=100)
+    drive('graphs/test_ER',hist=False,k=100)
