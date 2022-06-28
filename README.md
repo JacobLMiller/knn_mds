@@ -7,7 +7,7 @@ usage: layout.py [-h] [--max_iter MAX_ITER]
                 [--learning_rate LEARNING_RATE] [--output OUTPUT]
                 input_graph
 
-Read a graph, and produce a layout with tsNET(*).
+Read a graph, and produce an embedding with local-to-global (L2G) algorithm.
 
 positional arguments:
   input_graph
@@ -35,9 +35,10 @@ optional arguments:
                         Save layout to the specified file.
 ```
 
-#Example:
+# Example:
 ```
 # Read the input graph (a 10x10 grid), and display the result
+
 python3 layout.py graphs/10square.dot
 ```
 
