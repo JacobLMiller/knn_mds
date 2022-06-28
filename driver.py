@@ -48,8 +48,8 @@ def get_w(G,k=5,a=5,eps=0):
 def layout(G,d,d_norm,debug=True, k=7, a=5,t=0.6,radius=False):
     k = k if k < G.num_vertices() else G.num_vertices()
     w = get_w(G,k=k,a=a)
-    Y = SGD_d(d,weighted=True,w=w)
-    Xs = Y.solve(5000,debug=debug,radius=radius,t=t)
+    Y = SGD(d,weighted=True,w=w)
+    Xs = Y.solve(60,debug=debug,radius=radius,t=t)
     X = layout_io.normalize_layout(Xs)
 
     return X,w
@@ -140,7 +140,7 @@ def drive(graph,L2G=False,hist=False,output=None,k=10):
     G = gt.load_graph("{}.dot".format(graph))
 
     d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
-    d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
+    #d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
 
 
     w = get_w(G,k=k)
