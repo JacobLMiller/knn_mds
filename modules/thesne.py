@@ -210,7 +210,7 @@ def find_Y(X_shared, Y_shared, sigma_shared, N, output_dims, n_epochs,
            initial_l_c, final_l_c, l_c_switch,
            initial_l_r, final_l_r, l_r_switch,
            r_eps, autostop=False, window_size=10, verbose=0,
-           a=1):
+           a=1,interpolate=False):
     # Optimization hyperparameters
     initial_lr = np.array(initial_lr, dtype=floath)
     final_lr = np.array(final_lr, dtype=floath)
@@ -252,7 +252,7 @@ def find_Y(X_shared, Y_shared, sigma_shared, N, output_dims, n_epochs,
     Yv_shared = theano.shared(np.zeros((N, output_dims), dtype=floath))
 
     # Function for retrieving cost for all individual data points
-    costs = cost_var(X, Y, sigma, l_kl, l_c, l_r, r_eps)
+    costs = cost_var(X, Y, sigma, l_kl, l_c, l_r, r_eps) if not interpolate else cost_var2(X,Y,sigma,l_kl, l_c, l_r, r_eps, a)
 
     # Sum of all costs (scalar)
     cost = T.sum(costs)
@@ -402,7 +402,8 @@ def tsnet(X, perplexity=30, Y=None, output_dims=2, n_epochs=1000,
          initial_l_r=None, final_l_r=None, l_r_switch=None,
          r_eps=1, random_state=None,
          autostop=False, window_size=10, verbose=1,
-         a=1):
+         a=1,
+         interpolate=False):
     #random_state = check_random_state(random_state)
     random_state = check_random_state(None)
 
@@ -432,7 +433,7 @@ def tsnet(X, perplexity=30, Y=None, output_dims=2, n_epochs=1000,
         initial_l_kl, final_l_kl, l_kl_switch,
         initial_l_c, final_l_c, l_c_switch,
         initial_l_r, final_l_r, l_r_switch,
-        r_eps, autostop, window_size, verbose, a=a
+        r_eps, autostop, window_size, verbose, a=a,interpolate=interpolate
     )
 
     # Return the vertex coordinates.
