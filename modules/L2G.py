@@ -53,7 +53,10 @@ def sgd(X,d,w,indices,schedule,t,tol):
             l_sum = 1+t
 
             #Final gradient w.r.t X[i]
+            #if d[i,j] < 1: stress = stress * 0
             m = (1/l_sum)*stress + (t/l_sum)*repulsion
+
+
 
             #Update positions
             X[i] -= m

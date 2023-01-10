@@ -4,7 +4,7 @@ import modules.layout_io as layout_io
 import modules.distance_matrix as distance_matrix
 import modules.thesne as thesne
 
-from SGD_MDS2 import SGD_MDS2
+# from SGD_MDS2 import SGD_MDS2
 
 from sklearn.metrics import pairwise_distances
 
@@ -94,8 +94,8 @@ def get_tsnet_layout(d,graph_name):
     #gt.graph_draw(g, pos=pos)
     return Y
 
-def get_SGD_layout(d):
-    return SGD_MDS2(d,weighted=False).solve()
+# def get_SGD_layout(d):
+#     return SGD_MDS2(d,weighted=False).solve()
 
 def get_LG_layout(d,k,G):
     A = gt.adjacency(G).toarray()
@@ -122,7 +122,7 @@ def get_LG_layout(d,k,G):
     Nc = (n*(n-1))/2 - N
     t = (N/Nc)*np.median(d)*0.1
 
-    return SGD_MDS2(d,weighted=True,w=w).solve(num_iter=15,t=t,debug=False)
+    # return SGD_MDS2(d,weighted=True,w=w).solve(num_iter=15,t=t,debug=False)
 
 def calc_tsnet(d,d_norm,graph):
     X = get_tsnet_layout(d_norm,graph)
@@ -131,10 +131,11 @@ def calc_tsnet(d,d_norm,graph):
     return get_neighborhood(X_norm,d),get_stress(X_norm,d_norm)
 
 def calc_SGD(d,d_norm):
-    X = get_SGD_layout(d_norm)
-    X_norm = layout_io.normalize_layout(X)
+    pass
+    # X = get_SGD_layout(d_norm)
+    # X_norm = layout_io.normalize_layout(X)
 
-    return get_neighborhood(X_norm,d),get_stress(X_norm,d_norm)
+    # return get_neighborhood(X_norm,d),get_stress(X_norm,d_norm)
 
 def calc_LG_low(d,d_norm,G):
     X = get_LG_layout(d_norm,8,G)

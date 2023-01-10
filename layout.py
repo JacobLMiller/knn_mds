@@ -53,6 +53,17 @@ if __name__ == '__main__':
 
     #Get all-pairs-shortest-path matrix
     print('Computing SPDM...'.format(graph_name), end=' ', flush=True)
+    import numpy as np 
+
+    L = gt.laplacian(G).toarray()
+    n = G.num_vertices()
+    ga = np.linalg.pinv(L+ n * np.ones((n,n)))
+
+    d = np.zeros((n,n))
+    for i in range(n):
+        for j in range(i):
+            d[i,j] = ga[i,i] + ga[j,j] - 2*ga[i,j] 
+    d = d + d.T
     d = apsp(G)
     print("Done.")
 
@@ -60,7 +71,7 @@ if __name__ == '__main__':
     w = get_w(G,k=k)
 
     #Perform optimization from SGD_MDS_sphere module
-    X = L2G(d,weighted = True,w=w).solve(
+    X = L2G(d,weighted = False).solve(
         num_iter = args.max_iter,
         t=alpha,
         tol = args.epsilon
