@@ -58,6 +58,9 @@ def sqeuclidean_var(X):
 def euclidean_var(X):
     return T.maximum(sqeuclidean_var(X), epsilon) ** 0.5
 
+def euclidean_var_np(X):
+    return np.max(sqeuclidean_var(X),epsilon) ** 0.5
+
 
 # Conditional probabilities of picking (ordered) pairs in high-dim space.
 def p_ij_conditional_var(X, sigma):
@@ -72,6 +75,19 @@ def p_ij_conditional_var(X, sigma):
 
     return esqdistance_zd / row_sum  # Possibly dangerous
 
+def p_ij_conditional_var_np(X, sigma):
+    N = X.shape[0]
+
+    sqdistance = X**2
+
+    esqdistance = np.exp(-sqdistance / ((2 * (sigma**2)).reshape((N, 1))))
+    np.fill_diagonal(esqdistance, 0)
+
+    row_sum = np.sum(esqdistance, axis=1).reshape((N, 1))
+
+    return esqdistance / row_sum  # Possibly dangerous
+
+
 
 # Symmetrized probabilities of picking pairs in high-dim space.
 def p_ij_sym_var(p_ij_conditional):
@@ -84,6 +100,11 @@ def q_ij_student_t_var(Y):
     sqdistance = sqeuclidean_var(Y)
     one_over = T.fill_diagonal(1 / (sqdistance + 1), 0)
     return one_over / one_over.sum()
+
+def q_ij_student_t_var_np(Y):
+    sqdistance = sqeuclidean_var(Y)
+    np.fill_diagonal(1 / (sqdistance + 1), 0)
+    return sqdistance / sqdistance.sum()
 
 
 # Probabilities of picking pairs in low-dim space (using Gaussian).
@@ -121,6 +142,9 @@ def cost_var(X, Y, sigma, l_kl, l_c, l_r, r_eps):
 
     return cost
 
+def sigt(n):
+    return T.tanh(n)
+
 def cost_var2(X, Y, sigma, l_kl, l_c, l_r, r_eps,a):
     N = X.shape[0]
 
@@ -149,8 +173,45 @@ def cost_var2(X, Y, sigma, l_kl, l_c, l_r, r_eps,a):
     # Sum of all terms.
     cost = (l_kl / l_sum) * kl + (l_c / l_sum) * compression + (l_r / l_sum) * repulsion
 
-    return (1-a)*cost + (a)*stress
+    return (1-a)*sig(cost) + (a)*sig(stress)
 
+def sig(n):
+    return np.tanh(n)
+
+def cost_stress(X,Y,r_eps):
+    N = X.shape[0]
+    #Stress
+    stress = (1 / (2 * N **2)) * T.sum(T.fill_diagonal((euclidean_var(Y)-X) ** 2 + r_eps, 0), axis=1)
+    
+    return sig(stress)
+
+
+def cost_kl(X,Y,sigma,l_kl,l_c,l_r,r_eps):
+    N = X.shape[0]
+
+    # Used to normalize s.t. the l_*'s sum up to one.
+    l_sum = l_kl + l_c + l_r
+
+    p_ij_conditional = p_ij_conditional_var(X, sigma)
+    p_ij = p_ij_sym_var(p_ij_conditional)
+    q_ij = q_ij_student_t_var(Y)
+
+    p_ij_safe = T.maximum(p_ij, epsilon)
+    q_ij_safe = T.maximum(q_ij, epsilon)
+
+    # Kullback-Leibler term
+    kl = T.sum(p_ij * T.log(p_ij_safe / q_ij_safe), axis=1)
+
+    # Compression term
+    compression = (1 / (2 * N)) * T.sum(Y**2, axis=1)
+
+    # Repulsion term
+    repulsion = -(1 / (2 * N**2)) * T.sum(T.fill_diagonal(T.log(euclidean_var(Y) + r_eps), 0), axis=1)
+
+    # Sum of all terms.
+    cost = (l_kl / l_sum) * kl + (l_c / l_sum) * compression + (l_r / l_sum) * repulsion
+
+    return sig(cost)
 
 # Binary search on sigma for a given perplexity
 def find_sigma(X_shared, sigma_shared, N, perplexity, sigma_iters, verbose=0):
@@ -257,6 +318,12 @@ def find_Y(X_shared, Y_shared, sigma_shared, N, output_dims, n_epochs,
     # Sum of all costs (scalar)
     cost = T.sum(costs)
 
+    kls = cost_kl(X,Y,sigma,l_kl,l_c,l_r,r_eps)
+    KL = T.sum(kls) / X.shape[0]
+
+    stresses = cost_stress(X,Y,r_eps)
+    stress = T.sum(stresses) / X.shape[0]
+
     # Gradient of the cost w.r.t. Y
     grad_Y = T.grad(cost, Y)
 
@@ -304,6 +371,26 @@ def find_Y(X_shared, Y_shared, sigma_shared, N, output_dims, n_epochs,
             l_kl: l_kl_shared,
             l_c: l_c_shared,
             l_r: l_r_shared
+        }
+    )
+
+    get_KL = theano.function(
+        [], KL, 
+        givens={
+            X: X_shared,
+            sigma: sigma_shared,
+            Y: Y_shared,
+            l_kl: l_kl_shared,
+            l_c: l_c_shared,
+            l_r: l_r_shared
+        }
+    )
+
+    get_stress = theano.function(
+        [], stress, 
+        givens={
+            X: X_shared,
+            Y: Y_shared,
         }
     )
 
@@ -357,11 +444,25 @@ def find_Y(X_shared, Y_shared, sigma_shared, N, output_dims, n_epochs,
         # Do a gradient descent step
         update_Y()
 
+        # c = cost_np(
+        #     X_shared.get_value(),
+        #     Y_shared.get_value(),
+        #     sigma, 
+        #     l_kl,
+        #     l_c,
+        #     l_r,
+        #     r_eps,
+        #     a
+        # )
+
         #jacob_hist.append(Y_shared.get_value())
+        stress = get_stress()
+        kl = get_KL()
+        # print(stress, kl)
+        jacob_hist.append([stress,kl])
 
 
         c = get_cost()
-        #print(c)
         if np.isnan(float(c)):
             raise NaNException('Encountered NaN for cost.')
 
