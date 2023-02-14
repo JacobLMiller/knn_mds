@@ -77,6 +77,11 @@ def get_neighborhood(X,d,rg = 2):
 
     return NP / len(X)
 
+import graph_tool.all as gt
+def get_neighborhood_graph(X: np.array, G: gt.Graph, rg = 2):
+    degs = G.get_total_degrees(G.iter_vertices())
+    print(degs)
+
 
 
 
@@ -168,3 +173,23 @@ def avg_lcl_err(X,D):
                 local += abs(D[i][j]/max_theory - embed[i][j]/max_embed)
         err[i] = local / (n-1)
     return err
+
+def find_cluster_centers(X,c_ids):
+    cluster_centers = np.zeros( (len(c_ids),X.shape[1]) )
+    for i,clusters in enumerate(c_ids):
+        Xi = X[clusters]
+        center = Xi.mean(axis=0)
+        
+        cluster_centers[i] = center
+    return cluster_centers
+
+def cluster_distance(H,X,c_ids):
+    high_d_clusters = find_cluster_centers(H,c_ids)
+    low_d_clusters = find_cluster_centers(X,c_ids)
+
+    dh = pairwise_distances(high_d_clusters)
+    # dl = pairwise_distances(low_d_clusters)
+    return get_stress(low_d_clusters,dh)
+
+
+
