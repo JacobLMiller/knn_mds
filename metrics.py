@@ -144,19 +144,13 @@ def chen_neighborhood(D,X,k):
 
     percision = 0
     for i in range(len(D)):
-        embed_k = np.argsort(embed_dist[i])[1:k+1]
+        embed_k = set(np.argsort(embed_dist[i])[1:k+1])
+        hd_k = set(np.argsort(D[i])[1:k+1])
 
+        N_ki = len(embed_k.intersection(hd_k))
+        percision += N_ki
 
-        dK = np.argsort(D[i])[1:k+1][-1]
-        dK = D[i][dK]
-
-        count = 0
-        for j in embed_k:
-            if D[i][j] <= dK:
-                count += 1
-        percision += (count/k)
-
-    return percision / len(D)
+    return percision / (len(D) * k)
 
 def avg_lcl_err(X,D):
     embed = pairwise_distances(X)
@@ -190,6 +184,61 @@ def cluster_distance(H,X,c_ids):
     dh = pairwise_distances(high_d_clusters)
     # dl = pairwise_distances(low_d_clusters)
     return get_stress(low_d_clusters,dh)
+
+
+def cluster_preservation(H,X,c_ids):
+    high_d_clusters = find_cluster_centers(H,c_ids)
+    low_d_clusters = find_cluster_centers(X,c_ids)
+
+    dh = pairwise_distances(high_d_clusters)
+    return chen_neighborhood(dh,low_d_clusters,k=2)
+
+def normalised_kendall_tau_distance(values1, values2):
+    """Compute the Kendall tau distance."""
+    n = len(values1)
+    assert len(values2) == n, "Both lists have to be of equal length"
+    i, j = np.meshgrid(np.arange(n), np.arange(n))
+    a = np.argsort(values1)
+    b = np.argsort(values2)
+    ndisordered = np.logical_or(np.logical_and(a[i] < a[j], b[i] > b[j]), np.logical_and(a[i] > a[j], b[i] < b[j])).sum()
+    return ndisordered / (n * (n - 1))
+
+def cluster_preservation2(H,X,c_ids):
+    from scipy.stats import kendalltau
+    high_d_clusters = find_cluster_centers(H,c_ids)
+    low_d_clusters = find_cluster_centers(X,c_ids)
+
+    dh = pairwise_distances(high_d_clusters)
+    dl = pairwise_distances(low_d_clusters)
+
+    percision = 0
+    for i in range(len(dh)):
+        percision += normalised_kendall_tau_distance(dh[i],dl[i])
+    return percision / len(X)
+
+
+from scipy.spatial.distance import mahalanobis
+
+def comp_avg_mahalanobis(A,B,Si):
+    b = np.mean(B,axis=0)
+    s = 0
+    for row in A:
+        s += mahalanobis(row,b,Si)
+    return s / A.shape[0]
+
+def mahalonobis_metric(HD,LD,c_ids):
+    num_c = len(c_ids)
+    for i in range(num_c):
+        for j in range(i):
+            HD_c1 = HD[c_ids[i]]
+            HD_c2 = HD[c_ids[j]]
+            Si = np.linalg.inv(np.cov(HD_c2.T))
+            print(f"Distance between cluster {i} and cluster {j} in HD is {comp_avg_mahalanobis(HD_c1,HD_c2,Si)}")
+            Si = np.linalg.inv(np.cov(HD_c1.T))
+            print(f"Distance between cluster {j} and cluster {i} in HD is {comp_avg_mahalanobis(HD_c2,HD_c1,Si)}")
+
+
+
 
 
 
