@@ -1,5 +1,7 @@
 import numpy as np
 import graph_tool.all as gt
+from sklearn.metrics import pairwise_distances
+from metrics import find_cluster_centers
 
 """
 A function (G, X, cluster_ids)
@@ -16,6 +18,10 @@ compute embedding
 compute quality metric
 
 """
+
+def apsp(G,weights=None):
+    d = np.array( [v for v in gt.shortest_distance(G,weights=weights)] ,dtype=float)
+    return d
 
 
 def get_cluster_ids(G):
@@ -56,26 +62,35 @@ def get_cluster_graph(G,c_ids):
 def get_neighborhood(G,X):
     d = pairwise_distances(X)
     NE = 0
+    print(G.num_vertices())
     for v in G.iter_vertices():
         neighbors = set(G.iter_all_neighbors(v))
         k = len(neighbors)
         top_k = set(np.argsort(d[v])[1:k+1])
-        NE += len(top_k.intersection(neighbors))
+        num = len(top_k.intersection(neighbors))
+        print(k, num)
+        NE += (len(top_k.intersection(neighbors)) / len(top_k.union(neighbors)))
     return NE / G.num_vertices()
 
 def compute_cluster_metric(G,X,c_ids):
-    d = apsp(G)
+    H = get_cluster_graph(G,c_ids)
     low_d_clusters = find_cluster_centers(X,c_ids)
 
-    return get_neighborhood(G,low_d_clusters)
+    return get_neighborhood(H,low_d_clusters)
 
 
 
-G = gt.load_graph("graphs/connected_watts_400.dot")
+G = gt.load_graph("graphs/block_400.dot")
+# edges = [(0,1),(1,2),(2,3)]
+# G.add_edge_list(edges)
 
 c_ids = get_cluster_ids(G)
 
-H = get_cluster_graph(G,c_ids)
+from modules.L2G import L2G
+X = L2G(apsp(G),weighted=False).solve(100)
 
+print(compute_cluster_metric(G,X,c_ids))
 
-gt.graph_draw(H)
+pos = G.new_vp("vector<float>")
+pos.set_2d_array(X.T)
+gt.graph_draw(G,pos=pos)
