@@ -44,15 +44,22 @@ def maybe_add_vertex(G,H,u,v,c_ids):
     if any(G.edge( i,j ) for i in c_ids[u] for j in c_ids[v]):
         H.add_edge(u,v)
 
+def weight_cluster_edge(G,H,u,v,c_ids):
+    return sum(G.edge( i,j ) for i in c_ids[u] for j in c_ids[v])
+            
+
 
 
 def get_cluster_graph(G,c_ids):
     H = gt.Graph(directed=False)
     n,m = len(c_ids), G.num_vertices()
     H.add_vertex(n)
+    counts = np.zeros((n,n))
     for u in range(n):
         for v in range(n):
-            maybe_add_vertex(G,H,u,v,c_ids)
+            counts[u,v] = weight_cluster_edge(G,H,u,v,c_ids)
+            counts[v,u] = counts[u,v]
+    print(counts)
     
     gt.remove_parallel_edges(H)
     gt.remove_self_loops(H)
