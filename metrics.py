@@ -169,6 +169,7 @@ def avg_lcl_err(X,D):
     return err
 
 def find_cluster_centers(X,c_ids):
+    c_ids = [list(c) for c in c_ids]
     cluster_centers = np.zeros( (len(c_ids),X.shape[1]) )
     for i,clusters in enumerate(c_ids):
         Xi = X[clusters]
@@ -203,18 +204,14 @@ def normalised_kendall_tau_distance(values1, values2):
     ndisordered = np.logical_or(np.logical_and(a[i] < a[j], b[i] > b[j]), np.logical_and(a[i] > a[j], b[i] < b[j])).sum()
     return ndisordered / (n * (n - 1))
 
-def cluster_preservation2(H,X,c_ids):
+def cluster_preservation2(dh,dl,c_ids):
     from scipy.stats import kendalltau
-    high_d_clusters = find_cluster_centers(H,c_ids)
-    low_d_clusters = find_cluster_centers(X,c_ids)
 
-    dh = pairwise_distances(high_d_clusters)
-    dl = pairwise_distances(low_d_clusters)
 
     percision = 0
     for i in range(len(dh)):
         percision += normalised_kendall_tau_distance(dh[i],dl[i])
-    return percision / len(X)
+    return percision / len(dh)
 
 
 from scipy.spatial.distance import mahalanobis
@@ -236,6 +233,8 @@ def mahalonobis_metric(HD,LD,c_ids):
             print(f"Distance between cluster {i} and cluster {j} in HD is {comp_avg_mahalanobis(HD_c1,HD_c2,Si)}")
             Si = np.linalg.inv(np.cov(HD_c1.T))
             print(f"Distance between cluster {j} and cluster {i} in HD is {comp_avg_mahalanobis(HD_c2,HD_c1,Si)}")
+
+
 
 
 
