@@ -108,7 +108,9 @@ def get_cluster_distances(G,c_ids):
 
     for u in range(n):
         for v in range(u+1):
-            s[u,v] = sum(1 if G.edge(i,j) else 0 for i in c_ids[u] for j in c_ids[v])
+            x = sum(1 if G.edge(i,j) else 0 for i in c_ids[u] for j in c_ids[v])
+            x = np.exp(-(x**2))
+            s[u,v] = x
             s[v,u] = s[u,v]
     d = 1-(s/np.max(s,axis=0))
     return (d + d.T) / 2
@@ -121,7 +123,7 @@ def compute_graph_cluster_metrics(G,X,c_ids):
     high_d = get_cluster_distances(G,c_ids)
     low_d = find_cluster_centers(X,c_ids)
 
-    return get_stress(low_d,high_d),cluster_preservation2(high_d,pairwise_distances(low_d),c_ids),c_ids,state
+    return get_stress(low_d,high_d),cluster_preservation2(high_d,pairwise_distances(low_d),c_ids)
 
 
 if __name__ == "__main__":

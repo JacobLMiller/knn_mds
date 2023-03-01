@@ -56,9 +56,10 @@ def draw(G,X,output=None):
 
 from modules import L2G
 def embed_l2g(d,d_norm,num_params,name,G,rep=True,log=True,f_name="test"):
-    K = [4,8,32,128,512]
+    K = [8,16,32,52,85]
     NE,stress,times = np.zeros_like(K,dtype=float), np.zeros_like(K,dtype=float), np.zeros_like(K,dtype=float)
     Xs = list()
+    outs = list()
     for i, k in enumerate(K):
         k = int(k) if k < G.num_vertices() else G.num_vertices() - 1
 
@@ -73,13 +74,14 @@ def embed_l2g(d,d_norm,num_params,name,G,rep=True,log=True,f_name="test"):
         # times[i] = end-start
 
         outstr = f"drawings/{f_name}/{name}_{k}.png"
-        draw(G,X,outstr)
+        outs.append(outstr)
+        # draw(G,X,outstr)
         Xs.append(X)
 
-    return Xs
+    return Xs,outs
 
 def embed_l2g_transformation(d,d_norm,num_params,name,G,f_name="transformation"):
-    K = [4,8,32,128,512]
+    K = [8,16,32,52,85]
     NE,stress,times = np.zeros_like(K,dtype=float), np.zeros_like(K,float), np.zeros_like(K,float)
     Xs = list()
     outs = list()
@@ -204,6 +206,8 @@ def embedding(G,matrices, f,g_name,num_params=5, num_repeats=5,c_ids=None,state=
 
     d,d_norm = matrices
 
+    g_name, _ = g_name.split(".")
+
 
     NE, stress, times = get_zeros(num_params), get_zeros(num_params), get_zeros(num_params)
     m1,m2,m3,m4 = [get_zeros(num_params) for _ in range(4)]
@@ -220,10 +224,10 @@ def embedding(G,matrices, f,g_name,num_params=5, num_repeats=5,c_ids=None,state=
         m1 += m[:,0]
         m2 += m[:,1] 
 
-        for X in Xs:
+        for X,out in zip(Xs,output):
             pos = G.new_vp("vector<float>")
             pos.set_2d_array(X.T)
-            state.draw(pos=pos,output=output)
+            state.draw(pos=pos,output=out,vertex_color="black")
 
     
     NE /= num_repeats 
@@ -231,11 +235,8 @@ def embedding(G,matrices, f,g_name,num_params=5, num_repeats=5,c_ids=None,state=
     times /= num_repeats
     m1 /= num_repeats
     m2 /= num_repeats
-    m3 /= num_repeats
-    m4 /= num_repeats
 
-
-    return NE,stress, times,m1,m2,m3,m4
+    return NE,stress, times,m1,m2
 
 def get_ds(G):
     return distance_matrix.get_distance_matrix(G,'spdm',normalize=False), distance_matrix.get_distance_matrix(G,'spdm')
@@ -278,14 +279,14 @@ def experiment(n=5):
         c_ids, state = get_cluster_ids(G)
         d,d_norm = get_ds(G)
         for f_name, f in e_funcs.items():
-            NE, stress,times,m1,m2 = embedding(G,(d,d_norm),f,graph,c_ids,state)
+            NE, stress,times,m1,m2 = embedding(G,(d,d_norm),f,graph,c_ids=c_ids,state=state)
             data[f_name][graph]["NE"] = 1-NE
             data[f_name][graph]["stress"] = stress
             data[f_name][graph]["time"] = times
             data[f_name][graph]["m1"] = m1
             data[f_name][graph]["m2"] = m2
     
-            filehandler = open("02_23_test.pkl", 'wb') 
+            filehandler = open("02_28_kernel_test.pkl", 'wb') 
             pickle.dump(data, filehandler)
             filehandler.close()
 
@@ -300,4 +301,4 @@ def test():
     
 
 if __name__ == '__main__':
-    experiment(n=5)
+    experiment(n=30)
