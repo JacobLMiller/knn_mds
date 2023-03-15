@@ -39,7 +39,7 @@ def get_stress(X,d):
             stress += pow(d[i][j] - np.linalg.norm(X[i]-X[j]),2)
     return stress / np.sum(np.square(d))
 
-def get_tsnet_layout(d,graph_name,p=30,interpolate=False,a=0.9):
+def get_tsnet_layout(d,graph_name,p=30,interpolate=False,a=0.9,verbose=False):
     n = 2000
     momentum = 0.5
     tolerance = 1e-7
@@ -78,7 +78,7 @@ def get_tsnet_layout(d,graph_name,p=30,interpolate=False,a=0.9):
         initial_l_c=lambdas_2[1], final_l_c=lambdas_3[1], l_c_switch=n // 2,
         initial_l_r=lambdas_2[2], final_l_r=lambdas_3[2], l_r_switch=n // 2,
         r_eps=r_eps, autostop=tolerance, window_size=window_size,
-        verbose=True, a = a, interpolate=True
+        verbose=verbose, a = a, interpolate=interpolate
     )
 
     Y = layout_io.normalize_layout(Y)
@@ -86,26 +86,37 @@ def get_tsnet_layout(d,graph_name,p=30,interpolate=False,a=0.9):
     return Y
 
 def tsnet_exp():
-    G = gt.load_graph("graphs/block_400.dot")
+    Gs = [
+        gt.load_graph("graphs/block_400.dot"),
+        gt.load_graph("graphs/connected_watts_300.dot"),
+        gt.load_graph("graphs/12square.dot")
+    ]
+    names = ['blocks','watts','grid']
 
-    d = distance_matrix.get_distance_matrix(G,'spdm')
-    d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
+    for i,G in enumerate(Gs):
+        d = distance_matrix.get_distance_matrix(G,'spdm')
+        d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
 
-    scores = list() 
+        scores = list() 
 
-    for p in range(10,201,10):
-        Y = get_tsnet_layout(d,"block_400",p)
-        scores.append([get_neighborhood(Y,d_norm,1),get_stress(Y,d)])
+        for p in range(10,101,5):
+            print(f"Graph: {names[i]}, perplexity: {p}")
+            NP, stress = 0,0
+            for _ in range(15):
+                Y = get_tsnet_layout(d,"block_400",p)
+                NP += get_neighborhood(Y,d_norm,1)
+                stress += get_stress(Y,d)
+            scores.append([NP/15, stress/15])
 
-        # Convert layout to vertex property
-    # pos = G.new_vp('vector<float>')
-    # pos.set_2d_array(Y.T)
+            # Convert layout to vertex property
+        # pos = G.new_vp('vector<float>')
+        # pos.set_2d_array(Y.T)
 
-    # # Show layout on the screen
-    # gt.graph_draw(G, pos=pos)
+        # # Show layout on the screen
+        # gt.graph_draw(G, pos=pos)
 
-    np.savetxt("tsnet-scores-blocks.txt", np.array(scores))
-    print(get_neighborhood(Y,d,1))    
+        np.savetxt(f"tsnet-scores-{names[i]}.txt", np.array(scores))
+        print(get_neighborhood(Y,d,1))    
 
 
 def penguins(k,weight=True):
@@ -164,10 +175,10 @@ def penguins(k,weight=True):
     pylab.clf()
 
 if __name__ == "__main__":
-    # tsnet_exp()
+    tsnet_exp()
     # for k in [2,5,10,25,50,100,200]:
     #     penguins(k)
-    penguins(300,False)
+    # penguins(300,False)
     # G = gt.load_graph("graphs/block_model_400.dot")
 
     # d = distance_matrix.get_distance_matrix(G,'spdm')

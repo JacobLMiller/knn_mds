@@ -1,5 +1,4 @@
-from SGD_MDS2 import SGD
-
+from modules.L2G import L2G, get_w
 import modules.distance_matrix as distance_matrix
 import modules.layout_io as layout_io
 
@@ -10,40 +9,15 @@ import graph_tool.all as gt
 from metrics import get_neighborhood, get_stress,get_cost
 from sklearn.metrics import pairwise_distances
 
+from graph_metrics import apsp
 
-def get_w(G,k=5,a=5,eps=0):
-    A = gt.adjacency(G).toarray()
-    mp = np.linalg.matrix_power
-    A = sum([mp(A,i) for i in range(1,a+1)])
-    #A = np.linalg.matrix_power(A,a)
+def compute_umap(G):
+    d = apsp(G)
+    from umap import UMAP
+    X = UMAP(10,metric="precomputed").fit_transform(d)
 
-    #A += np.random.normal(scale=0.01,size=A.shape)
-    #A = 1-d_norm
+    draw(G,X,output="umap_draw.png")
 
-    #k = 10
-    B = np.argsort(A,axis=1)
-    k_nearest = [[None for _ in range(k)] for _ in range(len(A))]
-    for i in range(len(A)):
-        A_star = B[i][::-1]
-        for j in range(k):
-            if A[i][A_star[j]] == 0: break
-            k_nearest[i][j] = A_star[j]
-        if j < k:
-            pass
-
-    #k_nearest = [np.argpartition(A[i],-(k+1))[-(k+1):] for i in range(len(A))]
-    #print(A[0][k_nearest[0]])
-
-    n = G.num_vertices()
-    N = 0
-    w = np.asarray([[ eps if i != j else 0 for i in range(len(A))] for j in range(len(A))])
-    for i in range(len(A)):
-        for j in k_nearest[i]:
-            if i != j and j:
-                w[i][j] = 1
-                w[j][i] = 1
-
-    return w
 
 def layout(G,d,d_norm,debug=True, k=7, a=5,t=0.6,radius=False):
     k = k if k < G.num_vertices() else G.num_vertices()
@@ -73,81 +47,102 @@ def draw(G,X,output=None):
     else:
         gt.graph_draw(G,pos=pos)
 
-def layout_directory():
-    import os
-    graph_paths = os.listdir('new_tests/')
-    for graph in graph_paths:
-        k_curve(graph.split('.')[0])
-
-def draw_hist(G,Xs,d,w,Y):
-    NP = []
-    cost = []
-
-
-    for count in range(len(Xs)-1):
-        if count % 1 == 0: #or count < 100:
-            draw( G,Xs[count],output="drawings/update/test_{}.png".format(count) )
-            NP.append(get_neighborhood(Xs[count],d))
-            cost.append( get_cost( Xs[count], d, w, 0.6 ) )
-
-
-    print("NP: ", NP[-1])
-    import matplotlib.pyplot as plt
-    plt.plot(np.arange(len(NP)),NP)
-    plt.show()
-    plt.clf()
-    plt.suptitle("Cost function")
-    plt.plot(np.arange(len(cost)),cost)
-    plt.show()
-
-
-def iterate(graph):
-    G = gt.load_graph("{}.dot".format(graph))
-    d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
-    d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
-
-    a = 5
-    k = 10
-
-    K = list(range(10,101,10))
 
 
 
-    cost,NP,stress = [],[],[]
 
-    for k in K:
-        w = get_w(G,k=k,a=a)
-        Y = SGD(d,weighted=True, w = w)
-        X = Y.solve(60,debug=False,t=0.1)
+def diffusion_weights(d,a=5, k = 20, sigma=1):
+    #Transform distance matrix
+    diff = np.exp( -(d**2) / (sigma **2) )
+    diff /= np.sum(diff,axis=0)
 
-        NP.append(get_neighborhood(X,d))
-        stress.append(get_stress(X,d))
-        draw(G,X,output='test{}.png'.format(k))
-        cost.append(get_cost(X,d,w,0.1))
+    #Sum powers from 1 to a
+    mp = np.linalg.matrix_power
+    A = sum( mp(diff,i) for i in range(1,a+1) )
+    A = mp(diff,a)
 
-    plt.plot(NP,stress,marker='o')
-    for xy in zip(NP,stress):                                       # <--
-        plt.annotate('(%s, %s)' % xy, xy=xy, textcoords='data') # <--
+    # A = (pow(2,10*A) - 1)
 
-    plt.show()
-    plt.clf()
+    #Find k largest points for each row 
+    Neighbors = set()
+    for i in range(diff.shape[0]):
+        args = np.argsort(A[i])[::-1][1:k+1]
+        for j in args:
+            Neighbors.add( (int(i),int(j)) )
 
-    plt.plot(K,stress)
-    plt.plot(K,NP)
-    plt.show()
+    #Set pairs to 1
+    w = np.zeros_like(diff)
+    for i,j in Neighbors:
+        w[i,j] = 1
+        w[j,i] = 1
+    return w,A
 
-def drive(graph,L2G=False,hist=False,output=None,k=10):
-    G = gt.load_graph("{}.dot".format(graph))
+from sklearn.metrics import pairwise_distances
+import time
+
+def sample_k(max):
+
+    accept = False
+
+    while not accept:
+
+        k = np.random.randint(1,max+1)
+
+        accept = np.random.random() < 1.0/k
+
+    return k
+
+def get_graph(n=200):
+    return gt.random_graph(n, lambda: sample_k(40), model="probabilistic-configuration",
+
+                    edge_probs=lambda i, k: 1.0 / (1 + abs(i - k)), directed=False,
+
+                    n_iter=100)
+
+def measure_time(repeat=5):
+    sizes = list(range(200,4005,200))
+    print(len(sizes))
+    times = np.zeros(len(sizes))
+
+    for i,n in enumerate(sizes):
+        print(f"On the {n}th size")
+        for _ in range(repeat):
+            G = get_graph(n)
+            start = time.perf_counter() 
+            d = distance_matrix.get_distance_matrix(G,"spdm")
+            w = get_w(G,a=10,k=35)
+            X = L2G(d,weighted=True,w=w).solve(200)
+            end = time.perf_counter()
+
+            val = end-start
+            times[i] += val
+
+        times[i] /= repeat
+        np.savetxt("03_13_timeexp.txt",times)
+
+
+def drive(graph,hist=False,output=None,k=10):
+    # G = gt.load_graph("{}".format(graph))
+    G = graph
+    print(f"|V|: {G.num_vertices()}, |E|: {G.num_edges()}")
 
     d = distance_matrix.get_distance_matrix(G,'spdm',normalize=False)
     d_norm = distance_matrix.get_distance_matrix(G,'spdm',normalize=True)
     print(d)
 
-    w = get_w(G,k=k)
+    # w,A = diffusion_weights(d,k=k,a=2)
+    # metric = lambda pi, pj: np.sqrt(np.linalg.norm(np.log(pi) - np.log(pj)))
+    # B = pairwise_distances(A)
+    # print(B.shape)
 
-    Y = SGD(d,weighted=False, w = w)
+    w = get_w(G,a=10,k=5)
+    print(w)
 
-    X = Y.solve(60,debug=hist,t=0.1)
+    start = time.perf_counter()
+    Y = L2G(d,weighted=True, w = w)
+
+    X = Y.solve(200,debug=hist,t=0.1,log=True)
+    print(f"Optimization took {time.perf_counter()-start}s")
     X = layout_io.normalize_layout(X)
 
     print('NP: {}'.format(get_neighborhood(X,d,1)))
@@ -159,5 +154,6 @@ def drive(graph,L2G=False,hist=False,output=None,k=10):
         draw(G,X,output=output)
 
 if __name__ == '__main__':
-    drive('graphs/test_ER',hist=False,k=100)
+    G = gt.load_graph("graphs/connected_watts_500.dot")
+    compute_umap(G)
 
